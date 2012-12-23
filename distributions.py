@@ -26,7 +26,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
     def log_likelihood(self,x):
         D = self.A.shape[0]
         x = np.reshape(x,(-1,D))
-        Sigmachol = self.Sigmachol = self.Sigmacol \
+        Sigmachol = self.Sigmachol = self.Sigmachol \
                 if self.Sigmachol is not None else np.linalg.cholesky(self.Sigma)
         return -1./2. * \
                 self._dotter.dot(scipy.linalg.solve_triangular(
