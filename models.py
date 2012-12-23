@@ -11,11 +11,13 @@ from pyhsmm.plugins.autoregressive.states import ARHMMStates, ARHSMMStates
 
 class ARHMM(pyhsmm.models.HMM):
     def add_data(self,nlags,data,stateseq=None):
-        strided_data = ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*8,8))
+        sz = data.dtype.itemsize
+        strided_data = ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*sz,sz))
         self.states_list.append(ARHMMStates(data.shape[0],self.state_dim,self.obs_distns,self.dur_distns,self.trans_distn,self.init_state_distn,trunc=self.trunc,data=strided_data,stateseq=stateseq))
 
 
 class ARHSMM(pyhsmm.models.HSMM):
     def add_data(self,nlags,data,stateseq=None,censoring=None):
-        strided_data = ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*8,8))
+        sz = data.dtype.itemsize
+        strided_data = ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*sz,sz))
         self.states_list.append(ARHMMStates(data.shape[0],self.state_dim,self.obs_distns,self.dur_distns,self.trans_distn,self.init_state_distn,trunc=self.trunc,data=strided_data,stateseq=stateseq,censoring=censoring))
