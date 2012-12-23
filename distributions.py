@@ -33,7 +33,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
                     Sigmachol,
                     self.A.dot(x[:,:-D]) - x[:,-D:],
                     lower=True)**2) \
-                - D/2*np.log(2*np.pi) * np.diag(Sigmachol).prod()
+                - D/2*np.log(2*np.pi * np.diag(Sigmachol).prod())
 
     def rvs(self,size=[]):
         raise NotImplementedError
