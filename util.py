@@ -8,3 +8,7 @@ def AR_striding(data,nlags):
     sz = data.dtype.itemsize
     return ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*sz,sz))
 
+def undo_AR_striding(data,nlags):
+    sz = data.dtype.itemsize
+    return ast(data,shape=(data.shape[0]+nlags,data.shape[1]/(nlags+1)),strides=(data.shape[1]/(nlags+1)*sz,sz))
+
