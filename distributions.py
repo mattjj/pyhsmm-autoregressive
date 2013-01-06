@@ -54,7 +54,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
         for itr in range(length):
             out[itr+self.nlags] = self.A.dot(strided_out[itr]) + Sigmachol.dot(randomness[itr])
 
-        return out
+        return out[self.nlags:]
 
     def resample(self,data=[]):
         self.A, self.Sigma = sample_mniw(*self._posterior_hypparams(*self._get_statistics(data)))
