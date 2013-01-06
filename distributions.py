@@ -75,7 +75,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
                 Syyt = data[:,-D:].T.dot(data[:,:-D])
             else:
                 Syy = sum(d[:,-D:].T.dot(d[:,-D:]) for d in data)
-                Sytyt = sum(d[:,:-D].T.dot(data[:,:-D]) for d in data)
+                Sytyt = sum(d[:,:-D].T.dot(d[:,:-D]) for d in data)
                 Syyt = sum(d[:,-D:].T.dot(d[:,:-D]) for d in data)
         else:
             Syy = Sytyt = Syyt = None
