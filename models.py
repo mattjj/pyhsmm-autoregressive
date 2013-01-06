@@ -1,20 +1,14 @@
 from __future__ import division
-import numpy as np
-from numpy.lib.stride_tricks import as_strided as ast
 
 import pyhsmm
 
+from util import AR_striding
 from pyhsmm.plugins.autoregressive.states import ARHMMStates, ARHSMMStates
 
 # these exist only to play appropriate stride tricks on the data
 # and to instantiate the appropriate states classes for forward generation
-
-def AR_striding(data,nlags):
-    if data.ndim == 1:
-        data = np.reshape(data,(-1,1))
-    sz = data.dtype.itemsize
-    return ast(data,shape=(data.shape[0]-nlags,data.shape[1]*(nlags+1)),strides=(data.shape[1]*sz,sz))
-
+# TODO maybe striding should happen in states, though must be sure data
+# presented to obs_distns is strided... yeah states can just keep unstrided ref
 
 class ARHMM(pyhsmm.models.HMM):
     def __init__(self,nlags,*args,**kwargs):
