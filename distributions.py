@@ -17,6 +17,9 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
     '''
 
     def __init__(self,dof,S,M,K,affine=False):
+        assert S.shape[0] == S.shape[1] == M.shape[0] and M.shape[1] == K.shape[0] == K.shape[1]
+        assert ((not affine) and M.shape[1] % M.shape[0] == 0) or (affine and (M.shape[1]-1) % M.shape[0] == 0)
+
         self.dof = dof
         self.S = S
         self.M = M
@@ -24,7 +27,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
 
         self.affine = affine
 
-        self.nlags = M.shape[1]/M.shape[0]
+        self.nlags = M.shape[1]//M.shape[0] if not affine else (M.shape[1]-1)//M.shape[0]
         self._dotter = np.ones(M.shape[0])
 
         self.resample()
@@ -39,7 +42,8 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
         return -1./2. * \
                 self._dotter.dot(scipy.linalg.solve_triangular(
                     Sigmachol,
-                    self.A.dot(x[:,:-D].T) - x[:,-D:].T,
+                    (x[:,:-D].dot(self.A[:,(1 if self.affine else 0):].T) - x[:,-D:]).T \
+                            + (self.A[:,0,na] if self.affine else 0),
                     lower=True)**2) \
                 - D/2*np.log(2*np.pi * np.diag(Sigmachol).prod())
 
@@ -50,12 +54,13 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
         out[:self.nlags] = prefix
         strided_out = AR_striding(out,self.nlags-1)
 
-        randomness = np.random.normal(size=(length,self.M.shape[0]))
         Sigmachol = self.Sigmachol = self.Sigmachol \
                 if self.Sigmachol is not None else np.linalg.cholesky(self.Sigma)
+        randomness = np.random.normal(size=(length,self.M.shape[0])).dot(Sigmachol.T)
 
         for itr in range(length):
-            out[itr+self.nlags] = self.A.dot(strided_out[itr]) + Sigmachol.dot(randomness[itr])
+            out[itr+self.nlags] = self.A[:,(1 if self.affine else 0):].dot(strided_out[itr]) \
+                    + randomness[itr] + (self.A[:,0] if self.affine else 0)
 
         return out[self.nlags:]
 
@@ -78,7 +83,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
                 Syyt = data[:,-D:].T.dot(data[:,:-D])
 
                 if self.affine:
-                    Syyt = np.hstack((data[:,-D:].sum(0),Syyt))
+                    Syyt = np.hstack((data[:,-D:].sum(0)[:,na],Syyt))
                     Sytytsum = data[:,:-D].sum(0)
                     Sytyt = np.vstack((
                             np.hstack(((n,),Sytytsum)),
@@ -90,7 +95,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
                 Syyt = sum(d[:,-D:].T.dot(d[:,:-D]) for d in data)
 
                 if self.affine:
-                    Syyt = np.hstack((sum(d[:,-D:].sum(0) for d in data),Syyt))
+                    Syyt = np.hstack((sum(d[:,-D:].sum(0) for d in data)[:,na],Syyt))
                     Sytytsum = sum(d[:,:-D].sum(0) for d in data)
                     Sytyt = np.vstack((
                             np.hstack(((n,),Sytytsum)),
