@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from numpy import newaxis as na
 import scipy.linalg
 
 import pyhsmm
@@ -15,11 +16,13 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
     e.g. MNIW(3,3*np.eye(2),np.zeros((2,4)),10*np.eye(4))
     '''
 
-    def __init__(self,dof,S,M,K):
+    def __init__(self,dof,S,M,K,affine=False):
         self.dof = dof
         self.S = S
         self.M = M
         self.K = K
+
+        self.affine = affine
 
         self.nlags = M.shape[1]/M.shape[0]
         self._dotter = np.ones(M.shape[0])
@@ -73,10 +76,26 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
                 Syy = data[:,-D:].T.dot(data[:,-D:])
                 Sytyt = data[:,:-D].T.dot(data[:,:-D])
                 Syyt = data[:,-D:].T.dot(data[:,:-D])
+
+                if self.affine:
+                    Syyt = np.hstack((data[:,-D:].sum(0),Syyt))
+                    Sytytsum = data[:,:-D].sum(0)
+                    Sytyt = np.vstack((
+                            np.hstack(((n,),Sytytsum)),
+                            np.hstack((Sytytsum[:,na],Sytyt))
+                        ))
             else:
                 Syy = sum(d[:,-D:].T.dot(d[:,-D:]) for d in data)
                 Sytyt = sum(d[:,:-D].T.dot(d[:,:-D]) for d in data)
                 Syyt = sum(d[:,-D:].T.dot(d[:,:-D]) for d in data)
+
+                if self.affine:
+                    Syyt = np.hstack((sum(d[:,-D:].sum(0) for d in data),Syyt))
+                    Sytytsum = sum(d[:,:-D].sum(0) for d in data)
+                    Sytyt = np.vstack((
+                            np.hstack(((n,),Sytytsum)),
+                            np.hstack((Sytytsum[:,na],Sytyt))
+                        ))
         else:
             Syy = Sytyt = Syyt = None
 
