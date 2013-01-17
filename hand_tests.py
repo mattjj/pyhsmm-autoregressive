@@ -14,13 +14,13 @@ import pyhsmm.plugins.autoregressive.distributions as d
 ###############
 
 a = d.MNIW(3,10*np.eye(2),np.zeros((2,4)),100*np.eye(4))
-# a.A = np.hstack((-np.eye(2),2*np.eye(2)))
+a.A = np.hstack((-np.eye(2),2*np.eye(2)))
 
 b = d.MNIW(3,10*np.eye(2),np.zeros((2,4)),100*np.eye(4))
-# b.A = np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
+b.A = np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
 c = d.MNIW(3,10*np.eye(2),np.zeros((2,4)),100*np.eye(4))
-# c.A = np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
+c.A = np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
 
 data = np.array([0,1]).repeat(2).reshape((2,2))
