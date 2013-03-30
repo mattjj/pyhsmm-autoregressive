@@ -35,17 +35,20 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
     def __repr__(self):
         return 'MNIW(\nA=\n%s,\nSigma=\n%s\n)' % (self.A,self.Sigma)
 
+    def _get_sigma_chol(self):
+        if self._sigma_chol is None:
+            self._sigma_chol = np.linalg.cholesky(self.Sigma)
+        return self._sigma_chol
+
     def log_likelihood(self,x):
         D = self.A.shape[0]
-        Sigmachol = self.Sigmachol = self.Sigmachol \
-                if self.Sigmachol is not None else np.linalg.cholesky(self.Sigma)
-        return -1./2. * \
-                self._dotter.dot(scipy.linalg.solve_triangular(
-                    Sigmachol,
+        chol = self._get_sigma_chol()
+        return -1./2. * self._dotter.dot(scipy.linalg.solve_triangular(
+                    chol,
                     (x[:,:-D].dot(self.A[:,(1 if self.affine else 0):].T) - x[:,-D:]).T \
                             + (self.A[:,0,na] if self.affine else 0),
                     lower=True)**2) \
-                - D/2*np.log(2*np.pi * np.diag(Sigmachol).prod())
+                - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
 
     def rvs(self,prefix,length):
         assert prefix.ndim == 2 and prefix.shape[0] == self.nlags and prefix.shape[1] == self.M.shape[0]
@@ -54,9 +57,9 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
         out[:self.nlags] = prefix
         strided_out = AR_striding(out,self.nlags-1)
 
-        Sigmachol = self.Sigmachol = self.Sigmachol \
-                if self.Sigmachol is not None else np.linalg.cholesky(self.Sigma)
-        randomness = np.random.normal(size=(length,self.M.shape[0])).dot(Sigmachol.T)
+        chol = self._get_sigma_chol()
+
+        randomness = np.random.normal(size=(length,self.M.shape[0])).dot(chol.T)
 
         for itr in range(length):
             out[itr+self.nlags] = self.A[:,(1 if self.affine else 0):].dot(strided_out[itr]) \
@@ -66,7 +69,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
 
     def resample(self,data=[]):
         self.A, self.Sigma = sample_mniw(*self._posterior_hypparams(*self._get_statistics(data)))
-        self.Sigmachol = None
+        self._sigmachol = None
 
     def _get_statistics(self,data):
         # NOTE data must be passed in strided!!!
