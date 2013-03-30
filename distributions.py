@@ -36,7 +36,7 @@ class MNIW(pyhsmm.basic.abstractions.GibbsSampling):
         return 'MNIW(\nA=\n%s,\nSigma=\n%s\n)' % (self.A,self.Sigma)
 
     def _get_sigma_chol(self):
-        if self._sigma_chol is None:
+        if not hasattr(self,'_sigma_chol') or self._sigma_chol is None:
             self._sigma_chol = np.linalg.cholesky(self.Sigma)
         return self._sigma_chol
 
