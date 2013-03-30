@@ -25,7 +25,7 @@ c.A = np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-n
 
 data = np.array([0,2]).repeat(2).reshape((2,2))
 distns = [a,b,c]
-for i in range(6):
+for i in range(9):
     data = np.concatenate((data,distns[i % len(distns)].rvs(prefix=data[-2:],length=25)))
 
 plt.figure()
