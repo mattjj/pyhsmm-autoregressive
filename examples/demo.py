@@ -47,9 +47,9 @@ model = m.ARHSMM(
 
 model.add_data(data)
 
-# ######################
-# #  do DAT INFERENCE  #
-# ######################
+######################
+#  do DAT INFERENCE  #
+######################
 
 for itr in progprint_xrange(100):
     model.resample_model()
