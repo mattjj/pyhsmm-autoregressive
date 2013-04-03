@@ -16,6 +16,16 @@ class ARHMMStates(pyhsmm.internals.states.HMMStatesPython):
         # NOTE needs heuristic to generate the prefix
         raise NotImplementedError
 
+class ARHMMStatesEigen(pyhsmm.internals.states.ARHMMStatesEigen):
+    def __init__(self,*args,**kwargs):
+        self.nlags = kwargs['nlags']
+        del kwargs['nlags']
+        super(ARHMMStates,self).__init__(*args,**kwargs)
+
+    def generate_obs(self):
+        # NOTE needs heuristic to generate the prefix
+        raise NotImplementedError
+
 class ARHSMMStates(pyhsmm.internals.states.HSMMStatesPython, ARHMMStates):
     def __init__(self,*args,**kwargs):
         self.nlags = kwargs['nlags']
