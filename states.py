@@ -1,5 +1,4 @@
 from __future__ import division
-import numpy as np
 
 import pyhsmm
 
@@ -16,22 +15,20 @@ class ARHMMStates(pyhsmm.internals.states.HMMStatesPython):
         # NOTE needs heuristic to generate the prefix
         raise NotImplementedError
 
-class ARHMMStatesEigen(pyhsmm.internals.states.ARHMMStatesEigen):
+
+class ARHMMStatesEigen(pyhsmm.internals.states.HMMStatesEigen):
     def __init__(self,*args,**kwargs):
         self.nlags = kwargs['nlags']
         del kwargs['nlags']
-        super(ARHMMStates,self).__init__(*args,**kwargs)
+        super(ARHMMStatesEigen,self).__init__(*args,**kwargs)
 
-    def generate_obs(self):
-        # NOTE needs heuristic to generate the prefix
-        raise NotImplementedError
 
-class ARHSMMStates(pyhsmm.internals.states.HSMMStatesPython, ARHMMStates):
+class ARHSMMStates(pyhsmm.internals.states.HSMMStatesPython):
     def __init__(self,*args,**kwargs):
         self.nlags = kwargs['nlags']
         del kwargs['nlags']
         super(ARHSMMStates,self).__init__(*args,**kwargs)
 
     def generate_obs(self,*args,**kwargs):
-        return ARHMMStates.generate_obs(self,*args,**kwargs)
+        raise NotImplementedError
 
