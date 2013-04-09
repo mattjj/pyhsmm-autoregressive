@@ -38,8 +38,7 @@ plt.plot(data[:,0],data[:,1],'bx-')
 Nmax = 20
 model = m.ARHSMM(
         nlags=2,
-        alpha=4.,gamma=4.,init_state_concentration=2.,
-        # obs_distns=[d.MNIW(data.shape[1]+2,S_0,np.zeros((S_0.shape[0],K.shape[0])),K) for state in range(Nmax)],
+        alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=[d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4)) for state in range(Nmax)],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4) for state in range(Nmax)],
         trunc=50

@@ -19,11 +19,12 @@ class ARHMM(pyhsmm.models.HMM):
 
     def add_data(self,data,stateseq=None,initialize_from_prior=True):
         strided_data = AR_striding(data.copy(),self.nlags)
-        self.states_list.append(ARHMMStates(
-            strided_data.shape[0],self.state_dim,self.obs_distns,
-            self.trans_distn,self.init_state_distn,
-            data=strided_data,stateseq=stateseq,nlags=self.nlags,
-            initialize_from_prior=initialize_from_prior))
+        self.states_list.append(
+                ARHMMStates(
+                    strided_data.shape[0],self.state_dim,self.obs_distns,
+                    self.trans_distn,self.init_state_distn,
+                    data=strided_data,stateseq=stateseq,nlags=self.nlags,
+                    initialize_from_prior=initialize_from_prior))
 
     def plot_observations(self,colors=None,states_objs=None):
         if colors is None:
@@ -39,17 +40,21 @@ class ARHMM(pyhsmm.models.HMM):
             stateseq_norep, durs = rle(s.stateseq)
             starts = np.concatenate(((0,),durs.cumsum()))
             for state,start,dur in zip(stateseq_norep,starts,durs):
-                plt.plot(np.arange(start,start+data[start:start+dur].shape[0]),data[start:start+dur],color=cmap(colors[state]))
+                plt.plot(
+                        np.arange(start,start+data[start:start+dur].shape[0]),
+                        data[start:start+dur],
+                        color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
 class ARHMMEigen(ARHMM):
     def add_data(self,data,stateseq=None,initialize_from_prior=True):
         strided_data = AR_striding(data.copy(),self.nlags)
-        self.states_list.append(ARHMMStatesEigen(
-            strided_data.shape[0],self.state_dim,self.obs_distns,
-            self.trans_distn,self.init_state_distn,
-            data=strided_data,stateseq=stateseq,nlags=self.nlags,
-            initialize_from_prior=initialize_from_prior))
+        self.states_list.append(
+                ARHMMStatesEigen(
+                    strided_data.shape[0],self.state_dim,self.obs_distns,
+                    self.trans_distn,self.init_state_distn,
+                    data=strided_data,stateseq=stateseq,nlags=self.nlags,
+                    initialize_from_prior=initialize_from_prior))
 
 
 class ARHSMM(pyhsmm.models.HSMM):
@@ -59,7 +64,13 @@ class ARHSMM(pyhsmm.models.HSMM):
 
     def add_data(self,data,stateseq=None,censoring=None,initialize_from_prior=True):
         strided_data = AR_striding(data.copy(),self.nlags)
-        self.states_list.append(ARHSMMStates(strided_data.shape[0],self.state_dim,self.obs_distns,self.dur_distns,self.trans_distn,self.init_state_distn,trunc=self.trunc,data=strided_data,stateseq=stateseq,censoring=censoring,nlags=self.nlags,initialize_from_prior=initialize_from_prior))
+        self.states_list.append(
+                ARHSMMStates(
+                    strided_data.shape[0],
+                    self.state_dim,self.obs_distns,self.dur_distns,self.trans_distn,
+                    self.init_state_distn,trunc=self.trunc,data=strided_data,stateseq=stateseq,
+                    censoring=censoring,nlags=self.nlags,
+                    initialize_from_prior=initialize_from_prior))
 
     # TODO repeated code from ARHMM class
     def plot_observations(self,colors=None,states_objs=None):
@@ -76,6 +87,9 @@ class ARHSMM(pyhsmm.models.HSMM):
             stateseq_norep, durs = rle(s.stateseq)
             starts = np.concatenate(((0,),durs.cumsum()))
             for state,start,dur in zip(stateseq_norep,starts,durs):
-                plt.plot(np.arange(start,start+data[start:start+dur].shape[0]),data[start:start+dur],color=cmap(colors[state]))
+                plt.plot(
+                        np.arange(start,start+data[start:start+dur].shape[0]),
+                        data[start:start+dur],
+                        color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
