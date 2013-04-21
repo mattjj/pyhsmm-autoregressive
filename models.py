@@ -13,6 +13,8 @@ from pyhsmm.util.general import rle
 # and to instantiate the appropriate states classes for forward generation
 
 class ARHMM(pyhsmm.models.HMM):
+    _states_class = ARHMMStates
+
     def __init__(self,nlags,*args,**kwargs):
         super(ARHMM,self).__init__(*args,**kwargs)
         self.nlags = nlags
@@ -20,10 +22,11 @@ class ARHMM(pyhsmm.models.HMM):
     def add_data(self,data,stateseq=None,initialize_from_prior=True):
         strided_data = AR_striding(data.copy(),self.nlags)
         self.states_list.append(
-                ARHMMStates(
-                    strided_data.shape[0],self.state_dim,self.obs_distns,
-                    self.trans_distn,self.init_state_distn,
-                    data=strided_data,stateseq=stateseq,nlags=self.nlags,
+                self._states_class(
+                    nlags=self.nlags,
+                    model=self,
+                    data=strided_data,
+                    stateseq=stateseq,
                     initialize_from_prior=initialize_from_prior))
 
     def plot_observations(self,colors=None,states_objs=None):
@@ -46,18 +49,14 @@ class ARHMM(pyhsmm.models.HMM):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
+
 class ARHMMEigen(ARHMM):
-    def add_data(self,data,stateseq=None,initialize_from_prior=True):
-        strided_data = AR_striding(data.copy(),self.nlags)
-        self.states_list.append(
-                ARHMMStatesEigen(
-                    strided_data.shape[0],self.state_dim,self.obs_distns,
-                    self.trans_distn,self.init_state_distn,
-                    data=strided_data,stateseq=stateseq,nlags=self.nlags,
-                    initialize_from_prior=initialize_from_prior))
+    _states_class = ARHMMStatesEigen
 
 
 class ARHSMM(pyhsmm.models.HSMM):
+    _states_class = ARHSMMStates
+
     def __init__(self,nlags,*args,**kwargs):
         super(ARHSMM,self).__init__(*args,**kwargs)
         self.nlags = nlags
@@ -66,10 +65,11 @@ class ARHSMM(pyhsmm.models.HSMM):
         strided_data = AR_striding(data.copy(),self.nlags)
         self.states_list.append(
                 ARHSMMStates(
-                    strided_data.shape[0],
-                    self.state_dim,self.obs_distns,self.dur_distns,self.trans_distn,
-                    self.init_state_distn,trunc=self.trunc,data=strided_data,stateseq=stateseq,
-                    censoring=censoring,nlags=self.nlags,
+                    nlags=self.nlags,
+                    model=self,
+                    data=strided_data,
+                    stateseq=stateseq,
+                    censoring=censoring,
                     initialize_from_prior=initialize_from_prior))
 
     # TODO repeated code from ARHMM class
