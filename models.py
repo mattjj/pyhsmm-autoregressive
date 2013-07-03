@@ -20,7 +20,11 @@ class ARHMM(pyhsmm.models.HMM):
         self.nlags = nlags
 
     def add_data(self,data,stateseq=None,initialize_from_prior=True):
-        strided_data = AR_striding(data.copy(),self.nlags)
+        # I had some trouble with views and as_strided, so copy the data if it's
+        # a view
+        if not data.flags.owndata:
+            data = data.copy()
+        strided_data = AR_striding(data,self.nlags)
         self.states_list.append(
                 self._states_class(
                     nlags=self.nlags,
@@ -70,7 +74,9 @@ class ARHSMM(pyhsmm.models.HSMM):
         self.nlags = nlags
 
     def add_data(self,data,stateseq=None,censoring=None,initialize_from_prior=True):
-        strided_data = AR_striding(data.copy(),self.nlags)
+        if not data.flags.owndata:
+            data = data.copy()
+        strided_data = AR_striding(data,self.nlags)
         self.states_list.append(
                 ARHSMMStates(
                     nlags=self.nlags,
