@@ -54,6 +54,14 @@ class ARHMMEigen(ARHMM):
     _states_class = ARHMMStatesEigen
 
 
+class ARStickyHMMEigen(ARHMMEigen,pyhsmm.models.StickyHMMEigen): # TODO test
+    _states_class = ARHMMStatesEigen
+
+    def __init__(self,nlags,*args,**kwargs):
+        pyhsmm.models.StickyHMMEigen.__init__(self,*args,**kwargs)
+        self.nlags = nlags
+
+
 class ARHSMM(pyhsmm.models.HSMM):
     _states_class = ARHSMMStates
 
