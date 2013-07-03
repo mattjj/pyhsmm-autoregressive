@@ -6,27 +6,23 @@ import pyhsmm
 # as the iid case
 
 class ARHMMStates(pyhsmm.internals.states.HMMStatesPython):
-    def __init__(self,*args,**kwargs):
-        self.nlags = kwargs['nlags']
-        del kwargs['nlags']
+    def __init__(self,nlags,*args,**kwargs):
+        self.nlags = nlags
         super(ARHMMStates,self).__init__(*args,**kwargs)
 
     def generate_obs(self):
-        # NOTE needs heuristic to generate the prefix
         raise NotImplementedError
 
 
 class ARHMMStatesEigen(pyhsmm.internals.states.HMMStatesEigen):
-    def __init__(self,*args,**kwargs):
-        self.nlags = kwargs['nlags']
-        del kwargs['nlags']
+    def __init__(self,nlags,*args,**kwargs):
+        self.nlags = nlags
         super(ARHMMStatesEigen,self).__init__(*args,**kwargs)
 
 
 class ARHSMMStates(pyhsmm.internals.states.HSMMStatesPython):
-    def __init__(self,*args,**kwargs):
-        self.nlags = kwargs['nlags']
-        del kwargs['nlags']
+    def __init__(self,nlags,*args,**kwargs):
+        self.nlags = nlags
         super(ARHSMMStates,self).__init__(*args,**kwargs)
 
     def generate_obs(self,*args,**kwargs):
