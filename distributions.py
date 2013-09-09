@@ -8,7 +8,7 @@ from pyhsmm.util.stats import sample_mniw, getdatasize
 
 from util import AR_striding
 
-class MNIW(GibbsSampling, MaxLikelihood, MAP):
+class MNIW(GibbsSampling, MaxLikelihood):
     '''
     conjugate Matrix-Normal Inverse Wishart prior for (vector) autoregressive
     processes
@@ -32,12 +32,16 @@ class MNIW(GibbsSampling, MaxLikelihood, MAP):
 
         self.resample()
 
-    def __repr__(self):
+    @property
+    def params(self):
         if self.affine:
-            return 'MNIW(\nA=\n%s,\nb=%s,\nSigma=\n%s\n)' % (self.A,self.b,self.Sigma)
+            return dict(A=self.A,b=self.b,Sigma=self.Sigma)
         else:
-            return 'MNIW(\nA=\n%s,\nSigma=\n%s\n)' % (self.A,self.Sigma)
+            return dict(A=self.A,Sigma=self.Sigma)
 
+    @property
+    def hypparams(self):
+        return dict(dof=self.dof,S=self.S,M=self.M,K=self.K)
 
     def _get_sigma_chol(self):
         if not hasattr(self,'_sigma_chol') or self._sigma_chol is None:
@@ -147,9 +151,6 @@ class MNIW(GibbsSampling, MaxLikelihood, MAP):
             self.broken = True
 
         self._sigmachol = None
-
-    def map(self,data,weights=None):
-        raise NotImplementedError # TODO
 
     def _get_weighted_statistics(self,data,weights=None):
         if weights is None:
