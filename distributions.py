@@ -43,14 +43,26 @@ class MNIW(GibbsSampling, MaxLikelihood):
     def hypparams(self):
         return dict(dof=self.dof,S=self.S,M=self.M,K=self.K)
 
-    def _get_sigma_chol(self):
-        if not hasattr(self,'_sigma_chol') or self._sigma_chol is None:
-            self._sigma_chol = np.linalg.cholesky(self.Sigma)
-        return self._sigma_chol
+    def _get_Sigma(self):
+        return self._Sigma
+
+    def _set_Sigma(self,Sigma):
+        if not np.all(np.linalg.eigvalsh(Sigma) > 1e-10):
+            raise np.linalg.LinAlgError
+        self._Sigma = Sigma
+        self._Sigma_chol = None
+
+    Sigma = property(_get_Sigma,_set_Sigma)
+
+    @property
+    def Sigma_chol(self):
+        if self._Sigma_chol is None:
+            self._Sigma_chol = np.linalg.cholesky(self.Sigma)
+        return self._Sigma_chol
 
     def log_likelihood(self,x):
         D = self.A.shape[0]
-        chol = self._get_sigma_chol()
+        chol = self.Sigma_chol
         return -1./2. * self._dotter.dot(scipy.linalg.solve_triangular(
                     chol,
                     (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
@@ -66,9 +78,7 @@ class MNIW(GibbsSampling, MaxLikelihood):
         out[:self.nlags] = prefix
         strided_out = AR_striding(out,self.nlags-1)
 
-        chol = self._get_sigma_chol()
-
-        randomness = np.random.normal(size=(length,self.M.shape[0])).dot(chol.T)
+        randomness = np.random.normal(size=(length,self.M.shape[0])).dot(self.Sigma_chol.T)
 
         for itr in range(length):
             out[itr+self.nlags] = self.A.dot(strided_out[itr]) \
@@ -81,7 +91,6 @@ class MNIW(GibbsSampling, MaxLikelihood):
         if self.affine:
             self.b = self.A[:,0]
             self.A = self.A[:,1:]
-        self._sigmachol = None
 
     def _get_statistics(self,data):
         # NOTE data must be passed in strided!!!
@@ -150,8 +159,6 @@ class MNIW(GibbsSampling, MaxLikelihood):
             self.b = 999999999 * np.ones(self.M.shape[0])
             self.broken = True
 
-        self._sigmachol = None
-
     def _get_weighted_statistics(self,data,weights=None):
         if weights is None:
             return self._get_statistics(data)
@@ -186,4 +193,30 @@ class MNIW(GibbsSampling, MaxLikelihood):
                             ))
 
         return Syy,Sytyt,Syyt,neff
+
+class DiagNormalInverseWishartNonconj(GibbsSampling):
+    def __init__(self,dof,Sigma_0,M,sigmasqs,affine=False):
+        self.dof = dof
+        self.Sigma_0 = Sigma_0
+
+        self.M = M
+        self.sigmasqs = sigmasqs
+
+        self.nlags = (M.shape[1] + (-1 if affine else 0))//M.shape[0]
+
+        self.resample()
+
+    @property
+    def params(self):
+        if self.affine:
+            return dict(A=self.A,b=self.b,Sigma=self.Sigma)
+        else:
+            return dict(A=self.A,Sigma=self.Sigma)
+
+    @property
+    def hypparams(self):
+        return dict(dof=self.dof,S=self.S,M=self.M,K=self.K)
+
+    # TODO
+
 
