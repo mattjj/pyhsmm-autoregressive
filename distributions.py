@@ -9,13 +9,6 @@ from pyhsmm.util.stats import sample_mniw, getdatasize
 from util import AR_striding
 
 class MNIW(GibbsSampling, MaxLikelihood):
-    '''
-    conjugate Matrix-Normal Inverse Wishart prior for (vector) autoregressive
-    processes
-
-    e.g. MNIW(3,3*np.eye(2),np.zeros((2,4)),10*np.eye(4))
-    '''
-
     def __init__(self,dof,S,M,K,affine=False):
         assert S.shape[0] == S.shape[1] == M.shape[0] and M.shape[1] == K.shape[0] == K.shape[1]
         assert (M.shape[1] + (-1 if affine else 0)) % M.shape[0] == 0
