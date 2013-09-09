@@ -41,10 +41,9 @@ model = m.ARHSMM(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=[d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4)) for state in range(Nmax)],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4) for state in range(Nmax)],
-        trunc=50
         )
 
-model.add_data(data)
+model.add_data(data,trunc=50)
 
 ######################
 #  do DAT INFERENCE  #

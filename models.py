@@ -19,15 +19,14 @@ class ARHMM(pyhsmm.models.HMM):
         super(ARHMM,self).__init__(*args,**kwargs)
         self.nlags = nlags
 
-    def add_data(self,data,stateseq=None,initialize_from_prior=True):
+    def add_data(self,data,**kwargs):
         strided_data = AR_striding(data,self.nlags)
         self.states_list.append(
                 self._states_class(
                     nlags=self.nlags,
                     model=self,
                     data=strided_data,
-                    stateseq=stateseq,
-                    initialize_from_prior=initialize_from_prior))
+                    **kwargs))
 
     def plot_observations(self,colors=None,states_objs=None):
         if colors is None:
@@ -69,16 +68,14 @@ class ARHSMM(pyhsmm.models.HSMM):
         super(ARHSMM,self).__init__(*args,**kwargs)
         self.nlags = nlags
 
-    def add_data(self,data,stateseq=None,censoring=None,initialize_from_prior=True):
+    def add_data(self,data,**kwargs):
         strided_data = AR_striding(data,self.nlags)
         self.states_list.append(
                 ARHSMMStates(
                     nlags=self.nlags,
                     model=self,
                     data=strided_data,
-                    stateseq=stateseq,
-                    censoring=censoring,
-                    initialize_from_prior=initialize_from_prior))
+                    **kwargs))
 
     # TODO repeated code from ARHMM class
     def plot_observations(self,colors=None,states_objs=None):
