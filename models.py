@@ -6,7 +6,7 @@ from matplotlib import cm
 import pyhsmm
 
 from util import AR_striding, undo_AR_striding
-from pyhsmm.plugins.autoregressive.states import ARHMMStates, ARHSMMStates, ARHMMStatesEigen
+from autoregressive.states import ARHMMStates, ARHSMMStates, ARHMMStatesEigen
 from pyhsmm.util.general import rle
 
 # these exist only to play appropriate stride tricks on the data
