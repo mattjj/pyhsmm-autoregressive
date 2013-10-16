@@ -13,13 +13,13 @@ import pyhsmm.plugins.autoregressive.distributions as d
 #  make data  #
 ###############
 
-a = d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4))
+a = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
 a.A = np.hstack((-np.eye(2),2*np.eye(2)))
 
-b = d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4))
+b = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
 b.A = np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
-c = d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4))
+c = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
 c.A = np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
 
@@ -39,7 +39,7 @@ Nmax = 20
 model = m.ARHMM(
         nlags=2,
         alpha=4.,gamma=4.,init_state_concentration=10.,
-        obs_distns=[d.MNIW(3,np.eye(2),np.zeros((2,4)),np.eye(4)) for state in range(Nmax)],
+        obs_distns=[d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4)) for state in range(Nmax)],
         )
 
 model.add_data(data)
