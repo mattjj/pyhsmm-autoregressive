@@ -43,14 +43,18 @@ class _ARBase(MaxLikelihood):
     def log_likelihood(self,x):
         if hasattr(self,'broken'):
             return np.repeat(-np.inf,x.shape[0]) if isinstance(x,np.ndarray) else -np.inf
-        chol = self.Sigma_chol
-        D = self.D
-        return -1./2. * scipy.linalg.solve_triangular(
-                    chol,
-                    (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
-                            + (self.b[:,na] if self.affine else 0),
-                    lower=True).sum(0)**2 \
-                - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
+        try:
+            chol = self.Sigma_chol
+            D = self.D
+            return -1./2. * scipy.linalg.solve_triangular(
+                        chol,
+                        (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
+                                + (self.b[:,na] if self.affine else 0),
+                        lower=True).sum(0)**2 \
+                    - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
+        except np.linalg.LinAlgError:
+            self.broken = True
+            return np.repeat(-np.inf,x.shape[0]) if isinstance(x,np.ndarray) else -np.inf
 
     def rvs(self,prefix,length):
         D = self.D
