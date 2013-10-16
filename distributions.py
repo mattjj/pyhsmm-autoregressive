@@ -83,7 +83,7 @@ class _ARBase(MaxLikelihood):
 
     def _get_weighted_statistics(self,data,weights=None,nlags=None,D=None):
         if weights is None:
-            return self._get_statistics(data)
+            return self._get_statistics(data,D=D)
         else:
             D = D or getardatadimension(data)
             if isinstance(data,np.ndarray):
@@ -149,7 +149,8 @@ class _ARBase(MaxLikelihood):
         return Syy,Sytyt,Syyt,n
 
 class MNIW(_ARBase, GibbsSampling):
-    def __init__(self,A=None,b=None,Sigma=None,dof=None,S=None,M=None,K=None,affine=False):
+    def __init__(self,dof=None,S=None,M=None,K=None,affine=False,
+            A=None,b=None,Sigma=None):
         self.A = A
         self.b = b
         self.Sigma = Sigma
@@ -219,7 +220,8 @@ class FixedNoiseCov(_ARBase, GibbsSampling):
         return dict(M=self.M,sigmasq_A=self.sigmasq_A)
 
     def resample(self,data=[]):
-        J_n_l, J_n_r, M_n = self._posterior_hypparams(*self._get_statistics(data))
+        J_n_l, J_n_r, M_n = self._posterior_hypparams(
+                *self._get_statistics(data,D=self.Sigma.shape[0]))
         chol = np.linalg.cholesky(J_n_r)
         self.A = M_n + \
                 scipy.linalg.solve_triangular(
@@ -295,7 +297,8 @@ class FixedARCoefficients(_ARBase, GibbsSampling):
 
     def resample(self,data=[]):
         self.Sigma = sample_invwishart(
-                *self._posterior_hypparams(*self._get_statistics(data)))
+                *self._posterior_hypparams(
+                    *self._get_statistics(data,D=self.A.shape[0])))
         return self
 
     def _get_statistics(self,data):

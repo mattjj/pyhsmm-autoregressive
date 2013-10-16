@@ -6,8 +6,8 @@ plt.ion()
 
 import pyhsmm
 from pyhsmm.util.text import progprint_xrange
-import pyhsmm.plugins.autoregressive.models as m
-import pyhsmm.plugins.autoregressive.distributions as d
+import autoregressive.models as m
+import autoregressive.distributions as d
 
 ###############
 #  make data  #
