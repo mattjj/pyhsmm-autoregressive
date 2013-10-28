@@ -48,12 +48,15 @@ class ARHMM(pyhsmm.models.HMM):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
+    def generate(self,*args,**kwargs):
+        return super(ARHMM,self).generate(*args,nlags=self.nlags,**kwargs)
+
 
 class ARHMMEigen(ARHMM):
     _states_class = ARHMMStatesEigen
 
 
-class ARStickyHMMEigen(ARHMMEigen,pyhsmm.models.StickyHMMEigen): # TODO test
+class ARStickyHMMEigen(ARHMMEigen,pyhsmm.models.StickyHMMEigen):
     _states_class = ARHMMStatesEigen
 
     def __init__(self,nlags,*args,**kwargs):
