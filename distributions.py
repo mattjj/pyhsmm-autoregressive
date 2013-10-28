@@ -19,7 +19,11 @@ class _ARBase(MaxLikelihood):
 
     @property
     def nlags(self):
-        return self.A[1] // self.A[0]
+        return self.A.shape[1] // self.A.shape[0]
+
+    @property
+    def D(self):
+        return self.A.shape[0]
 
     def _get_Sigma(self):
         return self._Sigma
@@ -37,27 +41,30 @@ class _ARBase(MaxLikelihood):
         return self._Sigma_chol
 
     def log_likelihood(self,x):
-        assert is_strided(x)
         if hasattr(self,'broken'):
             return np.repeat(-np.inf,x.shape[0]) if isinstance(x,np.ndarray) else -np.inf
-        D = self.A.shape[0]
-        chol = self.Sigma_chol
-        return -1./2. * scipy.linalg.solve_triangular(
-                    chol,
-                    (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
-                            + (self.b[:,na] if self.affine else 0),
-                    lower=True).sum(0)**2 \
-                - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
+        try:
+            chol = self.Sigma_chol
+            D = self.D
+            return -1./2. * scipy.linalg.solve_triangular(
+                        chol,
+                        (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
+                                + (self.b[:,na] if self.affine else 0),
+                        lower=True).sum(0)**2 \
+                    - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
+        except np.linalg.LinAlgError:
+            self.broken = True
+            return np.repeat(-np.inf,x.shape[0]) if isinstance(x,np.ndarray) else -np.inf
 
     def rvs(self,prefix,length):
-        D = self.A.shape[0]
+        D = self.D
         assert prefix.ndim == 2 and prefix.shape[0] == self.nlags and prefix.shape[1] == D
 
         out = np.zeros((length+self.nlags,D))
         out[:self.nlags] = prefix
         strided_out = AR_striding(out,self.nlags-1)
 
-        randomness = np.random.normal(size=(length,self.D)).dot(self.Sigma_chol.T)
+        randomness = np.random.normal(size=(length,D)).dot(self.Sigma_chol.T)
 
         for itr in range(length):
             out[itr+self.nlags] = self.A.dot(strided_out[itr]) \
@@ -79,8 +86,6 @@ class _ARBase(MaxLikelihood):
             self.broken = True
 
     def _get_weighted_statistics(self,data,weights=None,nlags=None,D=None):
-        # TODO this never uses nlags
-        assert is_strided(data)
         if weights is None:
             return self._get_statistics(data,D=D)
         else:
@@ -168,9 +173,17 @@ class MNIW(_ARBase, GibbsSampling):
     def hypparams(self):
         return dict(dof=self.dof,S=self.S,M=self.M,K=self.K)
 
+    @property
+    def D(self):
+        return self.M.shape[0]
+
+    @property
+    def nlags(self):
+        return self.M.shape[1] // self.M.shape[0]
+
     def resample(self,data=[]):
-        self.A, self.Sigma = sample_mniw(*self._posterior_hypparams(
-            *self._get_statistics(data,D=self.M.shape[0])))
+        self.A, self.Sigma = sample_mniw(
+                *self._posterior_hypparams(*self._get_statistics(data,D=self.D)))
         if self.affine:
             self.b = self.A[:,0]
             self.A = self.A[:,1:]
@@ -324,7 +337,7 @@ class FixedARCoefficients(_ARBase, GibbsSampling):
         return neff, sumsq
 
     def _center_data(self,data):
-        D = self.A.shape[0]
+        D = self.D
         return ((data[:,:-D].dot(self.A.T) - data[:,-D:]).T \
                 + (self.b[:,na] if self.affine else 0)).T
 

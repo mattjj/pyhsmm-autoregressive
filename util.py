@@ -23,6 +23,7 @@ def undo_AR_striding(strided_data,nlags):
             strides=(strided_data.shape[1]/(nlags+1)*sz,sz))
 
 def getardatadimension(strided_data):
+    # TODO doesn't work when data is copied
     assert isinstance(strided_data,(np.ndarray,list)) and len(strided_data) > 0
     if isinstance(strided_data,np.ndarray):
         assert is_strided(strided_data), 'can only get AR dimension of strided data'
@@ -40,6 +41,7 @@ def getardatanlags(strided_data):
         return getardatanlags(strided_data[0])
 
 def is_strided(data):
+    # TODO doesn't work when data is copied
     if isinstance(data,list):
         return all(is_strided(d) for d in data)
     return data.ndim == 2 and \
