@@ -3,13 +3,16 @@ import numpy as np
 from numpy import newaxis as na
 import scipy.linalg
 
-from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood, MAP
+from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, getdatasize
 
-from util import AR_striding, undo_AR_striding, is_strided, \
-        getardatanlags, getardatadimension
+from util import AR_striding, undo_AR_striding
+
+# TODO take care of D always
 
 class _ARBase(MaxLikelihood):
+    affine = False
+
     @property
     def params(self):
         if self.affine:
@@ -36,7 +39,7 @@ class _ARBase(MaxLikelihood):
 
     @property
     def Sigma_chol(self):
-        if self._Sigma_chol is None:
+        if not hasattr(self,'_Sigma_chol') or self._Sigma_chol is None:
             self._Sigma_chol = np.linalg.cholesky(self.Sigma)
         return self._Sigma_chol
 
@@ -86,10 +89,10 @@ class _ARBase(MaxLikelihood):
             self.broken = True
 
     def _get_weighted_statistics(self,data,weights=None,nlags=None,D=None):
+        assert D is not None
         if weights is None:
             return self._get_statistics(data,D=D)
         else:
-            D = D or getardatadimension(data)
             if isinstance(data,np.ndarray):
                 neff = weights.sum()
                 Syy = data[:,-D:].T.dot(weights[:,na] * data[:,-D:])
@@ -119,10 +122,9 @@ class _ARBase(MaxLikelihood):
 
         return Syy,Sytyt,Syyt,neff
 
-    def _get_statistics(self,data,D=None):
+    def _get_statistics(self,data,D):
         n = getdatasize(data)
         if n > 0:
-            D = D or getardatadimension(data)
             if isinstance(data,np.ndarray):
                 Syy = data[:,-D:].T.dot(data[:,-D:])
                 Sytyt = data[:,:-D].T.dot(data[:,:-D])
@@ -225,7 +227,7 @@ class FixedNoiseCov(_ARBase, GibbsSampling):
 
     def resample(self,data=[]):
         J_n_l, J_n_r, M_n = self._posterior_hypparams(
-                *self._get_statistics(data,D=self.Sigma.shape[0]))
+                *self._get_statistics(data,D=self.D))
         chol = np.linalg.cholesky(J_n_r)
         self.A = M_n + \
                 scipy.linalg.solve_triangular(
@@ -251,7 +253,7 @@ class FixedNoiseCov(_ARBase, GibbsSampling):
             J_n_l = 1./self.sigmasq_A
         return J_n_l, J_n_r, M_n
 
-    def _get_statistics(self,data):
+    def _get_statistics(self,data,D):
         # NOTE: the strategy here is to reshape the data according to the fixed
         # noise covariance, then use the same statistics methods as the parent
         assert isinstance(data,(np.ndarray,list))
@@ -259,7 +261,7 @@ class FixedNoiseCov(_ARBase, GibbsSampling):
             data = self._reshape_data(data)
         else:
             data = map(self._reshape_data,data)
-        return super(FixedNoiseCov,self)._get_statistics(data)
+        return super(FixedNoiseCov,self)._get_statistics(data,D)
 
     def _get_weighted_statistics(self,data,weights):
         assert isinstance(data,(np.ndarray,list))
@@ -272,13 +274,12 @@ class FixedNoiseCov(_ARBase, GibbsSampling):
     def _reshape_data(self,data):
         assert isinstance(data,np.ndarray)
         if len(data) > 0:
-            nlags = getardatanlags(data)
             data = AR_striding(
                     scipy.linalg.solve_triangular(
                         self.Sigma_chol,
-                        undo_AR_striding(data,nlags).T,
+                        undo_AR_striding(data,self.nlags).T,
                         lower=True).T,
-                    nlags=nlags)
+                    nlags=self.nlags)
         return data
 
 class FixedARCoefficients(_ARBase, GibbsSampling):
@@ -302,10 +303,10 @@ class FixedARCoefficients(_ARBase, GibbsSampling):
     def resample(self,data=[]):
         self.Sigma = sample_invwishart(
                 *self._posterior_hypparams(
-                    *self._get_statistics(data,D=self.A.shape[0])))
+                    *self._get_statistics(data,D=self.D)))
         return self
 
-    def _get_statistics(self,data):
+    def _get_statistics(self,data,D):
         # NOTE: similar to pybasicbayes/distributions.py:GaussianFixedMean
         n = getdatasize(data)
         if n > 0:
@@ -355,10 +356,11 @@ class FixedARCoefficients(_ARBase, GibbsSampling):
 class NIWNonConj(_ARBase, GibbsSampling):
     def __init__(self,A=None,b=None,Sigma=None,
             M=None,sigmasq_A=None,dof=None,S=None,affine=False):
-        self._Sigma_obj = FixedARCoefficients(A=A,b=b,Sigma=Sigma,
-                dof=dof,S=S,affine=False)
-        self._coeff_obj = FixedNoiseCov(Sigma=self._Sigma_obj.Sigma,A=A,b=b,
-                M=M,sigmasq_A=sigmasq_A,affine=affine)
+        self._Sigma_obj = FixedARCoefficients(A=A if A is not None else M,
+                b=b,Sigma=Sigma,dof=dof,S=S,affine=False)
+        self._coeff_obj = FixedNoiseCov(Sigma=self._Sigma_obj.Sigma,
+                A=A if A is not None else M,
+                b=b,M=M,sigmasq_A=sigmasq_A,affine=affine)
         self.A = self._coeff_obj.A
         self.b = self._coeff_obj.b
 
