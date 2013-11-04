@@ -76,7 +76,7 @@ class _ARBase(MaxLikelihood):
         return out[self.nlags:]
 
     def max_likelihood(self,data,weights=None,nlags=None,D=None):
-        Syy, Sytyt, Syyt, n = self._get_weighted_statistics(data,weights,nlags,D)
+        Syy, Sytyt, Syyt, n = self._get_weighted_statistics(data,weights,nlags,D or self.D)
 
         try:
             self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
