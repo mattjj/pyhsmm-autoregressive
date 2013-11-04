@@ -23,12 +23,6 @@ class _ARMixin(object):
                 data=strided_data,
                 nlags=self.nlags)
 
-    def add_data_parallel(self,data,broadcast=False,**kwargs):
-        strided_data = AR_striding(data,self.nlags)
-        super(_ARMixin,self).add_data_parallel(
-                data=strided_data,
-                nlags=self.nlags)
-
     def plot_observations(self,colors=None,states_objs=None):
         if colors is None:
             colors = self._get_colors()
