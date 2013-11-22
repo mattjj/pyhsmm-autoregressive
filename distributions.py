@@ -78,14 +78,18 @@ class _ARBase(MaxLikelihood):
     def max_likelihood(self,data,weights=None,nlags=None,D=None):
         Syy, Sytyt, Syyt, n = self._get_weighted_statistics(data,weights,nlags,D or self.D)
 
-        try:
-            self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
-            self.Sigma = (Syy - self.A.dot(Syyt.T))/n
-            if self.affine:
-                self.b = self.A[:,0]
-                self.A = self.A[:,1:]
-        except np.linalg.LinAlgError:
-            # broken!
+        if n > 0:
+            try:
+                self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
+                self.Sigma = (Syy - self.A.dot(Syyt.T))/n
+                if self.affine:
+                    self.b = self.A[:,0]
+                    self.A = self.A[:,1:]
+            except np.linalg.LinAlgError:
+                # broken!
+                self.broken = True
+        else:
+            # no data, M step not defined
             self.broken = True
 
     def _get_weighted_statistics(self,data,weights=None,nlags=None,D=None):
