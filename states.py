@@ -5,6 +5,8 @@ import pyhsmm
 # there are really just here to override generation; otherwise they are the same
 # as the iid case
 
+# TODO these shouldn't exist at all! self.nlags is never even used
+
 class ARHMMStates(pyhsmm.internals.states.HMMStatesPython):
     def __init__(self,nlags,*args,**kwargs):
         self.nlags = nlags
