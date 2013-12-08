@@ -5,12 +5,14 @@ import abc
 from nose.plugins.attrib import attr
 
 from pyhsmm.basic.pybasicbayes.testing.mixins \
-        import BigDataGibbsTester, GewekeGibbsTester
+        import BigDataGibbsTester, GewekeGibbsTester, mkdir
 import distributions, util
+
+# TODO geweke tests aren't playing nicely because of instability
 
 class ARBigDataGibbsTester(BigDataGibbsTester):
     @abc.abstractproperty
-    def big_data_prefixes(self):
+    def prefixes(self):
         pass
 
     def check_big_data(self,setting_idx,hypparam_dict):
@@ -18,11 +20,63 @@ class ARBigDataGibbsTester(BigDataGibbsTester):
         d2 = self.distribution_class(**hypparam_dict)
 
         # NOTE: these lines are different
-        data = d1.rvs(self.big_data_prefixes[setting_idx],self.big_data_size)
+        data = d1.rvs(self.prefixes[setting_idx],self.big_data_size)
         strided_data = util.AR_striding(data,d1.nlags)
         d2.resample(strided_data)
 
         assert self.params_close(d1,d2)
+
+class ARGewekeGibbsTester(GewekeGibbsTester):
+    def check_geweke(self,setting_idx,hypparam_dict):
+            import os
+            from matplotlib import pyplot as plt
+            plt.ioff()
+            fig = plt.figure()
+            figpath = self.geweke_figure_filepath(setting_idx)
+            mkdir(os.path.dirname(figpath))
+
+            nsamples, data_size, ntrials = self.geweke_nsamples, \
+                    self.geweke_data_size, self.geweke_ntrials
+
+            d = self.distribution_class(**hypparam_dict)
+            sample_dim = np.atleast_1d(self.geweke_statistics(d,d.rvs(self.prefixes[setting_idx],10))).shape[0]
+
+            num_statistic_fails = 0
+            for trial in xrange(ntrials):
+                # collect forward-generated statistics
+                forward_statistics = np.squeeze(np.empty((nsamples,sample_dim)))
+                for i in xrange(nsamples):
+                    d = self.distribution_class(**hypparam_dict)
+                    data = d.rvs(self.prefixes[setting_idx],data_size)
+                    forward_statistics[i] = self.geweke_statistics(d,data)
+
+                # collect gibbs-generated statistics
+                gibbs_statistics = np.squeeze(np.empty((nsamples,sample_dim)))
+                d = self.distribution_class(**hypparam_dict)
+                data = d.rvs(self.prefixes[setting_idx],data_size)
+                for i in xrange(nsamples):
+                    d.resample(util.AR_striding(data,d.nlags),**self.resample_kwargs)
+                    data = d.rvs(self.prefixes[setting_idx],data_size)
+                    gibbs_statistics[i] = self.geweke_statistics(d,data)
+
+                testing.populations_eq_quantile_plot(forward_statistics,gibbs_statistics,fig=fig)
+                try:
+                    sl = self.geweke_numerical_slice(d,setting_idx)
+                    testing.assert_populations_eq_moments(
+                            forward_statistics[...,sl],gibbs_statistics[...,sl],
+                            pval=self.geweke_pval)
+                except AssertionError:
+                    datapath = os.path.join(os.path.dirname(__file__),'figures',
+                            self.__class__.__name__,'setting_%d_trial_%d.pdf' % (setting_idx,trial))
+                    np.savez(datapath,fwd=forward_statistics,gibbs=gibbs_statistics)
+                    example_violating_means = forward_statistics.mean(0), gibbs_statistics.mean(0)
+                    num_statistic_fails += 1
+
+            plt.savefig(figpath)
+
+            assert num_statistic_fails <= self.geweke_num_statistic_fails_to_tolerate, \
+                    'Geweke MAY have failed, check FIGURES in %s (e.g. %s vs %s)' \
+                    % ((os.path.dirname(figpath),) + example_violating_means)
 
 @attr('mniw')
 class TestMNIW(ARBigDataGibbsTester):
@@ -31,7 +85,7 @@ class TestMNIW(ARBigDataGibbsTester):
         return distributions.MNIW
 
     @property
-    def big_data_prefixes(self):
+    def prefixes(self):
         return (
                 np.array([[0.],[0.1],[0.2]]),
                 np.zeros((2,2)),
