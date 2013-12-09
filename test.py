@@ -6,9 +6,10 @@ from nose.plugins.attrib import attr
 
 from pyhsmm.basic.pybasicbayes.testing.mixins \
         import BigDataGibbsTester, GewekeGibbsTester, mkdir
+from pyhsmm.util import testing
 import distributions, util
 
-# TODO geweke tests aren't playing nicely because of instability
+# TODO geweke tests aren't playing nicely. instability or broken?
 
 class ARBigDataGibbsTester(BigDataGibbsTester):
     @abc.abstractproperty
@@ -111,4 +112,26 @@ class TestMNIW(ARBigDataGibbsTester):
 
     def params_close(self,d1,d2):
         return np.linalg.norm(d1.A - d2.A) < 0.1 and np.linalg.norm(d1.Sigma - d2.Sigma) < 0.1
+
+
+    @property
+    def geweke_hyperparameter_settings(self):
+        return (
+                dict(
+                    dof=1.5,S=3*np.eye(1),M=np.zeros((1,3)),K=10*np.eye(3),
+                    A=np.array([[0.3,0.2,0.1]]),Sigma=0.7*np.eye(1),
+                    ),
+               ) # TODO ensure stability
+
+
+    def geweke_statistics(self,d,data):
+        return d.A.ravel()
+
+    @property
+    def geweke_data_size(self):
+        return 5
+
+    @property
+    def geweke_nsamples(self):
+        return 2500
 
