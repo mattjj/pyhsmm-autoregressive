@@ -9,19 +9,14 @@ from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, ARHMMStatesEigen
 from pyhsmm.util.general import rle
 
-# these exist only to play appropriate stride tricks on the data
-# and to instantiate the appropriate states classes for forward generation
-
 class _ARMixin(object):
     def __init__(self,nlags,*args,**kwargs):
         super(_ARMixin,self).__init__(*args,**kwargs)
         self.nlags = nlags
 
-    def add_data(self,data,**kwargs):
-        strided_data = AR_striding(data,self.nlags)
-        super(_ARMixin,self).add_data(
-                data=strided_data,
-                nlags=self.nlags)
+    def add_data(self,data,already_strided=False,**kwargs):
+        strided_data = AR_striding(data,self.nlags) if not already_strided else data
+        super(_ARMixin,self).add_data(data=strided_data,**kwargs)
 
     def plot_observations(self,colors=None,states_objs=None):
         if colors is None:
@@ -43,8 +38,9 @@ class _ARMixin(object):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
-    def generate(self,*args,**kwargs):
-        return super(ARHMM,self).generate(*args,nlags=self.nlags,**kwargs)
+    def _get_parallel_kwargss(self,states_objs):
+        return [dict(already_strided=True,**out) for s,out in zip(
+            states_objs,super(_ARMixin,self)._get_parallel_kwargss(states_objs))]
 
 
 class ARHMM(_ARMixin,pyhsmm.models.HMM):
@@ -55,12 +51,8 @@ class ARHMMEigen(ARHMM):
     _states_class = ARHMMStatesEigen
 
 
-class ARStickyHMMEigen(ARHMMEigen,pyhsmm.models.StickyHMMEigen):
+class ARStickyHMMEigen(ARHMMEigen,_ARMixin,pyhsmm.models.StickyHMMEigen):
     _states_class = ARHMMStatesEigen
-
-    def __init__(self,nlags,*args,**kwargs):
-        pyhsmm.models.StickyHMMEigen.__init__(self,*args,**kwargs)
-        self.nlags = nlags
 
 
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
