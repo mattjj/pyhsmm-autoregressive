@@ -1,7 +1,7 @@
 from __future__ import division
 
 from pyhsmm.internals.states import HMMStatesPython, HMMStatesEigen, \
-        HSMMStatesPython
+        HSMMStatesPython, HSMMStatesEigen
 
 class _ARStatesMixin(object):
     def generate_obs(self):
@@ -18,3 +18,5 @@ class ARHMMStatesEigen(_ARStatesMixin,HMMStatesEigen):
 class ARHSMMStates(_ARStatesMixin,HSMMStatesPython):
     pass
 
+class ARHSMMStatesEigen(_ARStatesMixin,HSMMStatesEigen):
+    pass

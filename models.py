@@ -6,7 +6,8 @@ from matplotlib import cm
 import pyhsmm
 
 from util import AR_striding, undo_AR_striding
-from autoregressive.states import ARHMMStates, ARHSMMStates, ARHMMStatesEigen
+from autoregressive.states import ARHMMStates, ARHSMMStates, \
+        ARHMMStatesEigen, ARHSMMStatesEigen
 from pyhsmm.util.general import rle
 
 class _ARMixin(object):
@@ -57,4 +58,7 @@ class ARStickyHMMEigen(ARHMMEigen,_ARMixin,pyhsmm.models.StickyHMMEigen):
 
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
     _states_class = ARHSMMStates
+
+class ARHSMMIntNegBinVariant(_ARMixin,pyhsmm.models.HSMMIntNegBinVariant):
+    _states_class = ARHSMMStatesEigen
 
