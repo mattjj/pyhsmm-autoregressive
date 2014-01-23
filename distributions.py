@@ -3,12 +3,12 @@ import numpy as np
 from numpy import newaxis as na
 import scipy.linalg
 
-from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood, MAP
+from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood
 from pyhsmm.util.stats import sample_mniw, getdatasize
 
 from util import AR_striding
 
-class MNIW(GibbsSampling, MaxLikelihood, MAP):
+class MNIW(GibbsSampling, MaxLikelihood):
     '''
     conjugate Matrix-Normal Inverse Wishart prior for (vector) autoregressive
     processes
@@ -38,6 +38,14 @@ class MNIW(GibbsSampling, MaxLikelihood, MAP):
         else:
             return 'MNIW(\nA=\n%s,\nSigma=\n%s\n)' % (self.A,self.Sigma)
 
+    @property
+    def params(self):
+        return {} # TODO placeholder
+
+
+    @property
+    def hypparams(self):
+        return {} # TODO placeholder
 
     def _get_sigma_chol(self):
         if not hasattr(self,'_sigma_chol') or self._sigma_chol is None:
@@ -134,17 +142,18 @@ class MNIW(GibbsSampling, MaxLikelihood, MAP):
     def max_likelihood(self,data,weights=None):
         Syy, Sytyt, Syyt, n = self._get_weighted_statistics(data,weights)
 
-        try:
-            self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
-            self.Sigma = (Syy - self.A.dot(Syyt.T))/n
-            if self.affine:
-                self.b = self.A[:,0]
-                self.A = self.A[:,1:]
-        except np.linalg.LinAlgError:
-            # broken!
-            self.A = 999999999 * np.ones_like(self.M)
-            self.b = 999999999 * np.ones(self.M.shape[0])
-            self.broken = True
+        if n > 0:
+            try:
+                self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
+                self.Sigma = (Syy - self.A.dot(Syyt.T))/n
+                if self.affine:
+                    self.b = self.A[:,0]
+                    self.A = self.A[:,1:]
+            except np.linalg.LinAlgError:
+                # not enough data assigned to be full rank; broken
+                self.A = 999999999 * np.ones_like(self.M)
+                self.b = 999999999 * np.ones(self.M.shape[0])
+                self.broken = True
 
         self._sigmachol = None
 
