@@ -52,10 +52,6 @@ class ARHMMEigen(ARHMM):
     _states_class = ARHMMStatesEigen
 
 
-class ARStickyHMMEigen(ARHMMEigen,_ARMixin,pyhsmm.models.StickyHMMEigen):
-    _states_class = ARHMMStatesEigen
-
-
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
     _states_class = ARHSMMStates
 

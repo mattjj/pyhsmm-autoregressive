@@ -14,13 +14,13 @@ import autoregressive.distributions as d
 #  generate data  #
 ###################
 
-a = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
+a = d.MNIW(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),Kinv_0=np.eye(4))
 a.A = np.hstack((-np.eye(2),2*np.eye(2)))
 
-b = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
+b = d.MNIW(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),Kinv_0=np.eye(4))
 b.A = np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
-c = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
+c = d.MNIW(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),Kinv_0=np.eye(4))
 c.A = np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))
 
 
@@ -41,7 +41,7 @@ Nmax = 20
 model = m.ARHSMM(
         nlags=2,
         alpha=4.,gamma=4.,init_state_concentration=10.,
-        obs_distns=[d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4)) for state in range(Nmax)],
+        obs_distns=[d.MNIW(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),Kinv_0=np.eye(4)) for state in range(Nmax)],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4) for state in range(Nmax)],
         )
 

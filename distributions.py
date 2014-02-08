@@ -24,6 +24,32 @@ class _ARBase(MaxLikelihood):
             return dict(A=self.A,sigma=self.sigma)
 
     @property
+    def A(self):
+        if not self.affine:
+            return self.fullA
+        else:
+            return self.fullA[:,1:]
+
+    @A.setter
+    def A(self,A):
+        if not self.affine:
+            self.fullA = A
+        else:
+            self.fullA[:,1:] = A
+
+    @property
+    def b(self):
+        if self.affine:
+            return self.fullA[:,0]
+        else:
+            return np.zeros(self.fullA.shape[0])
+
+    @b.setter
+    def b(self,b):
+        assert self.affine
+        self.fullA[:,0] = b
+
+    @property
     def sigma(self):
         return self._sigma
 
@@ -46,8 +72,7 @@ class _ARBase(MaxLikelihood):
             D = self.D
             return -1./2. * scipy.linalg.solve_triangular(
                         chol,
-                        (x[:,:-D].dot(self.A.T) - x[:,-D:]).T \
-                                + (self.b[:,na] if self.affine else 0),
+                        (x[:,:-D].dot(self.A.T) - x[:,-D:]).T + self.b[:,na],
                         lower=True).sum(0)**2 \
                     - D/2*np.log(2*np.pi) - np.log(chol.diagonal()).sum()
         except np.linalg.LinAlgError:
@@ -65,8 +90,7 @@ class _ARBase(MaxLikelihood):
         randomness = np.random.normal(size=(length,D)).dot(self.sigma_chol.T)
 
         for itr in range(length):
-            out[itr+self.nlags] = self.A.dot(strided_out[itr]) \
-                    + randomness[itr] + (self.b if self.affine else 0)
+            out[itr+self.nlags] = self.A.dot(strided_out[itr]) + randomness[itr] + self.b
 
         return out[self.nlags:]
 
@@ -127,11 +151,8 @@ class _ARBase(MaxLikelihood):
 
         if n > 0:
             try:
-                self.A = np.linalg.solve(Sytyt, Syyt.T).T # TODO call psd solver
-                self.sigma = (Syy - self.A.dot(Syyt.T))/n
-                if self.affine:
-                    self.b = self.A[:,0]
-                    self.A = self.A[:,1:]
+                self.fullA = np.linalg.solve(Sytyt, Syyt.T).T
+                self.sigma = (Syy - self.fullA.dot(Syyt.T))/n
             except np.linalg.LinAlgError:
                 # broken!
                 self.broken = True
@@ -142,10 +163,9 @@ class _ARBase(MaxLikelihood):
 class MNIW(_ARBase,GibbsSampling):
     def __init__(self,nu_0,S_0,M_0,Kinv_0,affine=False,
             A=None,b=None,sigma=None):
-        self.A = A
-        self.b = b
-        self.sigma = sigma
         self.affine = affine or (b is not None)
+        self.fullA = np.hstack((b[:,na],A)) if self.affine else A
+        self.sigma = sigma
 
         self.natural_hypparam = self._standard_to_natural(nu_0, S_0, M_0, Kinv_0)
         self.D = M_0.shape[0]
@@ -180,13 +200,12 @@ class MNIW(_ARBase,GibbsSampling):
     ### Gibbs sampling
 
     def resample(self,data=[]):
-        self.A, self.sigma = sample_mniw_kinv(
+        self.fullA, self.sigma = sample_mniw_kinv(
             *self._natural_to_standard(self.natural_hypparam + self._get_statistics(data)))
 
     def copy_sample(self):
         new = copy.copy(self)
-        new.A = self.A.copy()
+        new.fullA = self.fullA.copy()
         new.sigma = self.sigma.copy()
-        new.b = self.b.copy() if self.affine else None
         return new
 
