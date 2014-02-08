@@ -9,9 +9,11 @@ from pyhsmm.util.text import progprint_xrange
 import autoregressive.models as m
 import autoregressive.distributions as d
 
-###############
-#  make data  #
-###############
+np.seterr(over='raise')
+
+###################
+#  generate data  #
+###################
 
 a = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
 a.A = np.hstack((-np.eye(2),2*np.eye(2)))
@@ -31,9 +33,9 @@ for i in range(9):
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
 
-####################
-#  make DAT MODEL  #
-####################
+##################
+#  create model  #
+##################
 
 Nmax = 20
 model = m.ARHMM(
@@ -44,12 +46,12 @@ model = m.ARHMM(
 
 model.add_data(data)
 
-######################
-#  do DAT INFERENCE  #
-######################
+###############
+#  inference  #
+###############
 
 print 'Gibbs sampling initialization'
-for itr in progprint_xrange(5):
+for itr in progprint_xrange(10):
     model.resample_model()
 
 print 'EM'

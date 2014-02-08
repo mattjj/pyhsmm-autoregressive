@@ -10,9 +10,9 @@ from pyhsmm.util.text import progprint_xrange
 import autoregressive.models as m
 import autoregressive.distributions as d
 
-###############
-#  make data  #
-###############
+###################
+#  generate data  #
+###################
 
 a = d.MNIW(dof=3,S=np.eye(2),M=np.zeros((2,4)),K=np.eye(4))
 a.A = np.hstack((-np.eye(2),2*np.eye(2)))
@@ -32,9 +32,10 @@ for i in range(9):
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
 
-####################
-#  make DAT MODEL  #
-####################
+##################
+#  create model  #
+##################
+
 
 Nmax = 20
 model = m.ARHSMM(
@@ -46,9 +47,9 @@ model = m.ARHSMM(
 
 model.add_data(data,trunc=50)
 
-######################
-#  do DAT INFERENCE  #
-######################
+###############
+#  inference  #
+###############
 
 for itr in progprint_xrange(100):
     model.resample_model()
