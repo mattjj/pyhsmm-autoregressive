@@ -5,7 +5,8 @@ import scipy.linalg
 import copy
 
 from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood
-from pyhsmm.util.stats import sample_mniw_kinv, sample_invwishart, getdatasize
+from pyhsmm.util.stats import sample_mniw_kinv, sample_invwishart, sample_mn, \
+        getdatasize
 
 from util import AR_striding, undo_AR_striding
 
@@ -163,8 +164,11 @@ class _ARBase(MaxLikelihood):
 class MNIW(_ARBase,GibbsSampling):
     def __init__(self,nu_0,S_0,M_0,Kinv_0,affine=False,
             A=None,b=None,sigma=None):
-        self.affine = affine or (b is not None)
-        self.fullA = np.hstack((b[:,na],A)) if self.affine else A
+        self.affine = affine
+        if A is not None:
+            self.fullA = np.hstack((b[:,na],A)) if affine else A
+        else:
+            self.fullA = None
         self.sigma = sigma
 
         self.natural_hypparam = self._standard_to_natural(nu_0, S_0, M_0, Kinv_0)
@@ -172,7 +176,7 @@ class MNIW(_ARBase,GibbsSampling):
         self.nlags = M_0.shape[1] // M_0.shape[0] if not self.affine \
                 else (M_0.shape[1]-1) // M_0.shape[0]
 
-        if (A,sigma,b) == (None,None,None) and None not in (nu_0,S_0,M_0,Kinv_0):
+        if (affine and (A,sigma,b) == (None,None,None)) or (A,sigma) == (None,None):
             self.resample() # initialize from prior
 
     @property
@@ -207,5 +211,61 @@ class MNIW(_ARBase,GibbsSampling):
         new = copy.copy(self)
         new.fullA = self.fullA.copy()
         new.sigma = self.sigma.copy()
+        return new
+
+class MNFixedSigma(_ARBase,GibbsSampling):
+    def __init__(self,sigma,M_0,Uinv_0,Vinv_0,affine=False,
+            A=None,b=None):
+        self.affine = affine
+        self.fullA = np.hstack((b[:,na],A)) if affine else A
+        self.sigma = sigma
+
+        self.natural_hypparam = self._standard_to_natural(M_0,Uinv_0,Vinv_0)
+        self.D = M_0.shape[0]
+        self.nlags = M_0.shape[1] // M_0.shape[0] if not self.affine \
+                else (M_0.shape[1]-1) // M_0.shape[0]
+
+        self.resample()
+
+    @property
+    def hypparams(self):
+        M_0, Uinv_0, Vinv_0 = self._natural_to_standard(self.natural_hypparam)
+        return dict(M_0=M_0,Uinv_0=Uinv_0,Vinv_0=Vinv_0)
+
+    ### converting between natural and standard hyperparameters
+
+    def _standard_to_natural(self,M,Uinv,Vinv):
+        return np.array([Uinv.dot(M).dot(Vinv),-0.5*Uinv,Vinv])
+
+    def _natural_to_standard(self,natparam):
+        Uinv, Vinv, product = natparam
+        Uinv = Uinv / -0.5
+        M = np.linalg.solve(Uinv,np.linalg.solve(Vinv,product.T).T)
+        return dict(M=M,Uinv=Uinv,Vinv=Vinv)
+
+    ### statistics
+
+    def _get_statistics(self,data):
+        return self._shape_statistics(
+            super(MNFixedSigma,self)._get_statistics(data))
+
+    def _get_weighted_statistics(self,data,weights=None):
+        return self._shape_statistics(
+            super(MNFixedSigma,self)._get_weighted_statistics(data,weights))
+
+    def _shape_statistics(self,stats):
+        Syy, Syyt, Sytyt, n = stats
+        sigmainv = self.linalg.inv(sigma)
+        return np.array([sigmainv.dot(Syyt), -0.5*sigmainv, Sytyt])
+
+    ### Gibbs sampling
+
+    def resample(self,data=[]):
+        self.fullA = sample_mn(
+            **self._natural_to_standard(self.natural_hypparam + self._get_statistics(data)))
+
+    def copy_sample(self):
+        new = copy.copy(self)
+        new.fullA = self.fullA.copy()
         return new
 
