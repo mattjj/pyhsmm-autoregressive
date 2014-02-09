@@ -4,7 +4,7 @@ from numpy import newaxis as na
 import scipy.linalg
 import copy
 
-from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood
+from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood, Distribution
 from pyhsmm.util.stats import sample_mniw_kinv, sample_invwishart, sample_mn, \
         getdatasize
 
@@ -12,7 +12,7 @@ from util import AR_striding, undo_AR_striding
 
 # TODO support 'lazy' instantiation
 
-class _ARBase(MaxLikelihood):
+class _ARBase(Distribution):
     def __init__(self,D,nlags):
         self.D = D
         self.nlags = nlags
@@ -146,9 +146,10 @@ class _ARBase(MaxLikelihood):
             else:
                 return sum(self._get_weighted_statistics(d,w) for d,w in zip(data,weights))
 
+class _ARMaxLikelihood(_ARBase,MaxLikelihood):
     def max_likelihood(self,data,weights=None):
         D = self.D
-        Syy, Syyt, Sytyt, n = self._get_weighted_statistics(data,weights)
+        Syy, Syyt, Sytyt, n = _ARBase._get_weighted_statistics(self,data,weights)
 
         if n > 0:
             try:
@@ -161,22 +162,25 @@ class _ARBase(MaxLikelihood):
             # no data, M step not defined
             self.broken = True
 
-class MNIW(_ARBase,GibbsSampling):
+class AR_MNIW(GibbsSampling,_ARMaxLikelihood):
     def __init__(self,nu_0,S_0,M_0,Kinv_0,affine=False,
             A=None,b=None,sigma=None):
         self.affine = affine
-        if A is not None:
-            self.fullA = np.hstack((b[:,na],A)) if affine else A
+        if affine and None not in (A,b):
+            self.fullA = np.hstack((b[:,na],A))
+        elif not affine and A is not None:
+            self.fullA = A
         else:
             self.fullA = None
         self.sigma = sigma
 
         self.natural_hypparam = self._standard_to_natural(nu_0, S_0, M_0, Kinv_0)
+
         self.D = M_0.shape[0]
         self.nlags = M_0.shape[1] // M_0.shape[0] if not self.affine \
                 else (M_0.shape[1]-1) // M_0.shape[0]
 
-        if (affine and (A,sigma,b) == (None,None,None)) or (A,sigma) == (None,None):
+        if None in (self.fullA, self.sigma):
             self.resample() # initialize from prior
 
     @property
@@ -213,19 +217,26 @@ class MNIW(_ARBase,GibbsSampling):
         new.sigma = self.sigma.copy()
         return new
 
-class MNFixedSigma(_ARBase,GibbsSampling):
+class AR_MNFixedSigma(_ARBase,GibbsSampling):
     def __init__(self,sigma,M_0,Uinv_0,Vinv_0,affine=False,
             A=None,b=None):
         self.affine = affine
-        self.fullA = np.hstack((b[:,na],A)) if affine else A
+        if affine and None not in (A,b):
+            self.fullA = np.hstack((b[:,na],A))
+        elif not affine and A is not None:
+            self.fullA = A
+        else:
+            self.fullA = None
         self.sigma = sigma
 
         self.natural_hypparam = self._standard_to_natural(M_0,Uinv_0,Vinv_0)
+
         self.D = M_0.shape[0]
         self.nlags = M_0.shape[1] // M_0.shape[0] if not self.affine \
                 else (M_0.shape[1]-1) // M_0.shape[0]
 
-        self.resample()
+        if self.fullA is None:
+            self.resample() # initialize from prior
 
     @property
     def hypparams(self):
@@ -247,11 +258,11 @@ class MNFixedSigma(_ARBase,GibbsSampling):
 
     def _get_statistics(self,data):
         return self._shape_statistics(
-            super(MNFixedSigma,self)._get_statistics(data))
+            super(AR_MNFixedSigma,self)._get_statistics(data))
 
     def _get_weighted_statistics(self,data,weights=None):
         return self._shape_statistics(
-            super(MNFixedSigma,self)._get_weighted_statistics(data,weights))
+            super(AR_MNFixedSigma,self)._get_weighted_statistics(data,weights))
 
     def _shape_statistics(self,stats):
         Syy, Syyt, Sytyt, n = stats
@@ -268,4 +279,131 @@ class MNFixedSigma(_ARBase,GibbsSampling):
         new = copy.copy(self)
         new.fullA = self.fullA.copy()
         return new
+
+class AR_IWFixedA(_ARBase,GibbsSampling):
+    def __init__(self,A,nu_0,S_0,affine=False,sigma=None):
+        self.affine = affine
+        self.fullA = A
+        self.sigma = sigma
+
+        self.natural_hypparam = self._standard_to_natural(nu_0,S_0)
+
+        self.D = A.shape[0]
+        self.nlags = A.shape[1] // A.shape[0] if not self.affine \
+                else (A.shape[1]-1) // A.shape[0]
+
+        if self.sigma is None:
+            self.resample() # initialize from prior
+
+    @property
+    def hypparams(self):
+        nu_0, S_0 = self._natural_to_standard(self.natural_hypparam)
+        return dict(nu_0=nu_0,S_0=S_0)
+
+    ### converting between natural and standard hyperparameters
+
+    def _standard_to_natural(self,nu,S):
+        np.array([S,nu])
+
+    def _natural_to_standard(self,natparam):
+        S, nu = natparam
+        return dict(nu=nu,S=S)
+
+    ### statistics
+
+    def _get_statistics(self,data):
+        return self._shape_statistics(
+            super(AR_IWFixedA,self)._get_statistics(data))
+
+    def _get_weighted_statistics(self,data,weights=None):
+        return self._shape_statistics(
+            super(AR_IWFixedA,self)._get_weighted-statistics(data,weights))
+
+    def _shape_statistics(self,stats):
+        Syy, Syyt, Sytyt, n = stats
+        A = self.fullA
+        return np.array([Syy - 2*Syyt.dot(A.T) + A.dot(Sytyt).dot(A.T),n])
+
+    ### Gibbs sampling
+
+    def resample(self,data=[]):
+        self.sigma = sample_invwishart(
+            **self._natural_to_standard(self.natural_hypparam + self._get_statistics(data)))
+
+    def copy_sample(self):
+        new = copy.copy(self)
+        new.sigma = self.sigma.copy()
+        return new
+
+class AR_MN_IW_Nonconj(AR_IWFixedA,AR_MNFixedSigma,_ARMaxLikelihood):
+    def __init__(self,nu_0,S_0,M_0,Uinv_0,Vinv_0,affine=False,
+            A=None,b=None,sigma=None,niter=1):
+        self.affine = affine
+        if affine and None not in (A,b):
+            self.fullA = np.hstack((b[:,na],A))
+        elif not affine and A is not None:
+            self.fullA = A
+        else:
+            self.fullA = None
+        self.sigma = sigma
+
+        self.natural_hypparam = self._standard_to_natural(nu_0,S_0,M_0,Uinv_0,Vinv_0)
+
+        self.D = M_0.shape[0]
+        self.nlags = M_0.shape[1] // M_0.shape[0] if not self.affine \
+                else (M_0.shape[1]-1) // M_0.shape[0]
+
+        self.niter = niter
+
+        if self.sigma is None:
+            self.resample_sigma()
+        if self.fullA is None:
+            self.resample_A()
+
+    ### converting between natural and standard hyperparameters
+
+    def _standard_to_natural(self,nu,S,M,Uinv,Vinv):
+        return np.concatenate((
+            AR_IWFixedA._standard_to_natural(self,nu,S),
+            AR_MNFixedSigma._standard_to_natural(self,M,Uinv,Vinv),
+            ))
+
+    def _natural_to_standard(self,natparam):
+        return joindicts((
+            AR_IWFixedA._natural_to_standard(natparam[:2]),
+            AR_MNFixedSigma._natural_to_standard(natparam[2:]),
+            ))
+
+    ### statistics
+
+    def _get_statistics(self,data):
+        return _ARBase._get_statistics(self,data)
+
+    def _get_weighted_statistics(self,data,weights=None):
+        return _ARBase._get_weighted_statistics(self,data,weights)
+
+    ### Gibbs sampling
+
+    def resample(self,data=[],niter=None):
+        stats = self._get_statistics(data)
+        if stats[-1] > 0:
+            niter = self.niter if niter is None else niter
+        else:
+            niter = 1
+        for itr in xrange(niter):
+            self.resample_sigma(stats)
+            self.resample_A(stats)
+
+    def resample_sigma(self,data=[],stats=None):
+        stats = self._get_statistics(data) if stats is None else stats
+        self.sigma = sample_invwishart(**AR_IWFixedA._natural_to_standard(self,
+            self.natural_hypparam[:2] + AR_IWFixedA._shape_statistics(self,stats)))
+
+    def resample_A(self,data=[],stats=None):
+        stats = self._get_statistics(data) if stats is None else stats
+        self.fullA = sample_mn(**AR_MNFixedSigma._natural_to_standard(self,
+            self.natural_hypparam[2:] + AR_MNFixedSigma._shape_statistics(self,stats)))
+
+    def copy_sample(self):
+        return _ARBase.copy_sample(self)
 
