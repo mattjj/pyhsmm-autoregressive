@@ -299,7 +299,7 @@ class AR_IWFixedA(_ARBase,GibbsSampling):
     ### converting between natural and standard hyperparameters
 
     def _standard_to_natural(self,nu,S):
-        np.array([S,nu])
+        return np.array([S,nu])
 
     def _natural_to_standard(self,natparam):
         S, nu = natparam
@@ -318,7 +318,7 @@ class AR_IWFixedA(_ARBase,GibbsSampling):
     def _shape_statistics(self,stats):
         Syy, Syyt, Sytyt, n = stats
         A = self.fullA
-        return np.array([Syy - 2*Syyt.dot(A.T) + A.dot(Sytyt).dot(A.T),n])
+        return np.array([Syy - Syyt.dot(A.T) - A.dot(Syyt.T) + A.dot(Sytyt).dot(A.T),n])
 
     ### Gibbs sampling
 

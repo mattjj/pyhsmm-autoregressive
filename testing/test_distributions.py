@@ -95,3 +95,34 @@ class Test_AR_MNFixedSigma(ARBigDataGibbsTester):
     def big_data_repeats_per_setting(self):
         return 3
 
+@attr('AR_IWFixedA')
+class Test_AR_IWFixedA(ARBigDataGibbsTester):
+    @property
+    def distribution_class(self):
+        return d.AR_IWFixedA
+
+    @property
+    def hyperparameter_settings(self):
+        return (
+            dict(A=np.hstack((-0.2*np.eye(2),1.2*np.eye(2))),nu_0=4,S_0=4*np.eye(2)),
+            )
+
+    @property
+    def prefixes(self):
+        return (np.zeros((2,2)),)
+
+    @property
+    def nlagss(self):
+        return (2,)
+
+    def params_close(self,d1,d2):
+        return np.linalg.norm(d1.sigma-d2.sigma) < 0.25
+
+    @property
+    def big_data_size(self):
+        return 10000
+
+    @property
+    def big_data_repeats_per_setting(self):
+        return 3
+
