@@ -9,6 +9,9 @@ from pyhsmm.basic.pybasicbayes.testing.mixins import BigDataGibbsTester
 from .. import distributions as d
 from ..util import AR_striding
 
+# TODO merge nlags, prefixes into the hyperparameter settings
+# TODO params_close should depend on setting_idx
+
 class ARBigDataGibbsTester(BigDataGibbsTester):
     def check_big_data(self,setting_idx,hypparam_dict):
         d1 = self.distribution_class(**hypparam_dict)
@@ -72,8 +75,9 @@ class Test_AR_MNFixedSigma(ARBigDataGibbsTester):
     @property
     def hyperparameter_settings(self):
         return (
-            dict(sigma=np.diag([1.,2.]),M_0=np.zeros((2,4)),Uinv_0=1e-2*np.eye(2),
-                Vinv_0=1e-2*np.eye(4),A=np.hstack((-0.2*np.eye(2),1.2*np.eye(2)))),
+            dict(sigma=np.diag([1.,2.]),M_0=np.zeros((2,4)),Uinv_0=np.diag([1e-2,2e-2]),
+                Vinv_0=np.diag([1e-2,2e-2,1e-2,1e-2]),
+                A=np.hstack((-0.2*np.eye(2),1.2*np.eye(2)))),
             )
 
     @property
@@ -121,6 +125,41 @@ class Test_AR_IWFixedA(ARBigDataGibbsTester):
     @property
     def big_data_size(self):
         return 10000
+
+    @property
+    def big_data_repeats_per_setting(self):
+        return 3
+
+@attr('AR_MN_IW_Nonconj')
+class Test_AR_MN_IW_Nonconj(ARBigDataGibbsTester):
+    @property
+    def distribution_class(self):
+        return d.AR_MN_IW_Nonconj
+
+    @property
+    def hyperparameter_settings(self):
+        return (
+            dict(
+                nu_0=5,S_0=5*np.eye(2),
+                M_0=np.zeros((2,4)),Uinv_0=1e-2*np.eye(2),Vinv_0=1e-2*np.eye(4),
+                A=np.hstack((-0.2*np.eye(2),1.2*np.eye(2))),sigma=np.eye(2),
+                niter=10),
+            )
+
+    @property
+    def prefixes(self):
+        return (np.zeros((2,2)),)
+
+    @property
+    def nlagss(self):
+        return (2,)
+
+    def params_close(self,d1,d2):
+        return np.linalg.norm(d1.fullA-d2.fullA) < 1.5
+
+    @property
+    def big_data_size(self):
+        return 5000
 
     @property
     def big_data_repeats_per_setting(self):

@@ -352,9 +352,9 @@ class AR_MN_IW_Nonconj(AR_IWFixedA,AR_MNFixedSigma,_ARMaxLikelihood):
         self.niter = niter
 
         if self.sigma is None:
-            self.resample_sigma()
+            self.resample_sigma(niter=1)
         if self.fullA is None:
-            self.resample_A()
+            self.resample_A(niter=1)
 
     ### converting between natural and standard hyperparameters
 
@@ -382,13 +382,10 @@ class AR_MN_IW_Nonconj(AR_IWFixedA,AR_MNFixedSigma,_ARMaxLikelihood):
 
     def resample(self,data=[],niter=None):
         stats = self._get_statistics(data)
-        if stats[-1] > 0:
-            niter = self.niter if niter is None else niter
-        else:
-            niter = 1
+        niter = self.niter
         for itr in xrange(niter):
-            self.resample_sigma(stats)
-            self.resample_A(stats)
+            self.resample_A(stats=stats)
+            self.resample_sigma(stats=stats)
 
     def resample_sigma(self,data=[],stats=None):
         stats = self._get_statistics(data) if stats is None else stats
