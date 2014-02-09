@@ -5,7 +5,7 @@ import scipy.linalg
 import copy
 
 from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood, Distribution
-from pyhsmm.util.stats import sample_mniw_kinv, sample_invwishart, sample_mn, \
+from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
 from util import AR_striding, undo_AR_striding
@@ -13,10 +13,6 @@ from util import AR_striding, undo_AR_striding
 # TODO support 'lazy' instantiation
 
 class _ARBase(Distribution):
-    def __init__(self,D,nlags):
-        self.D = D
-        self.nlags = nlags
-
     @property
     def params(self):
         if self.affine:
@@ -203,13 +199,13 @@ class AR_MNIW(GibbsSampling,_ARMaxLikelihood):
         Kinv = B
         M = np.linalg.solve(B,C.T).T
         S = A - M.dot(B).dot(M.T)
-        return nu, S, M, Kinv
+        return dict(nu=nu,S=S,M=M,Kinv=Kinv)
 
     ### Gibbs sampling
 
     def resample(self,data=[]):
-        self.fullA, self.sigma = sample_mniw_kinv(
-            *self._natural_to_standard(self.natural_hypparam + self._get_statistics(data)))
+        self.fullA, self.sigma = sample_mniw(
+            **self._natural_to_standard(self.natural_hypparam + self._get_statistics(data)))
 
     def copy_sample(self):
         new = copy.copy(self)
@@ -249,7 +245,7 @@ class AR_MNFixedSigma(_ARBase,GibbsSampling):
         return np.array([Uinv.dot(M).dot(Vinv),-0.5*Uinv,Vinv])
 
     def _natural_to_standard(self,natparam):
-        Uinv, Vinv, product = natparam
+        product, Uinv, Vinv = natparam
         Uinv = Uinv / -0.5
         M = np.linalg.solve(Uinv,np.linalg.solve(Vinv,product.T).T)
         return dict(M=M,Uinv=Uinv,Vinv=Vinv)
@@ -266,7 +262,7 @@ class AR_MNFixedSigma(_ARBase,GibbsSampling):
 
     def _shape_statistics(self,stats):
         Syy, Syyt, Sytyt, n = stats
-        sigmainv = self.linalg.inv(sigma)
+        sigmainv = np.linalg.inv(self.sigma)
         return np.array([sigmainv.dot(Syyt), -0.5*sigmainv, Sytyt])
 
     ### Gibbs sampling
