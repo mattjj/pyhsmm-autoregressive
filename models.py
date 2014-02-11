@@ -44,17 +44,14 @@ class _ARMixin(object):
             states_objs,super(_ARMixin,self)._get_parallel_kwargss(states_objs))]
 
 
-class ARHMM(_ARMixin,pyhsmm.models.HMM):
+class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStates
 
 
-class ARHMMEigen(ARHMM):
-    _states_class = ARHMMStatesEigen
-
-
-class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
+class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
     _states_class = ARHSMMStates
 
-class ARHSMMIntNegBinVariant(_ARMixin,pyhsmm.models.HSMMIntNegBinVariant):
-    _states_class = ARHSMMStatesEigen
+# TODO
+# class ARHSMMIntNegBinVariant(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+#     _states_class = ARHSMMStatesEigen
 
