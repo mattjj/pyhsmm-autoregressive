@@ -51,8 +51,7 @@ model.add_data(data,trunc=50)
 #  inference  #
 ###############
 
-for itr in progprint_xrange(100):
-    model.resample_model()
+samples = [model.resample_and_copy() for itr in progprint_xrange(100)]
 
 plt.figure()
 model.plot()
