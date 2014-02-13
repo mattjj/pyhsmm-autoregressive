@@ -63,3 +63,6 @@ stateseq = model.states_list[0].stateseq
 for i,s in enumerate(np.unique(stateseq)):
     plt.plot(data[s==stateseq,0],data[s==stateseq,1],colors[i % len(colors)] + 'o')
 
+print model.heldout_viterbi(data)
+print model.heldout_state_marginals(data)
+
