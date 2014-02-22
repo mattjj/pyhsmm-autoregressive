@@ -181,8 +181,8 @@ class AR_MNIW(GibbsSampling,_ARMaxLikelihood):
 
     @property
     def hypparams(self):
-        nu_0, S_0, M_0, Kinv_0 = self._natural_to_standard(self.natural_hypparam)
-        return dict(nu_0=nu_0,S_0=S_0,M_0=M_0,Kinv_0=Kinv_0)
+        return {name+'_0':val for name,val in
+                self._natural_to_standard(self.natural_hypparam)}
 
     ### converting between natural and standard hyperparameters
 
