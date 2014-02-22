@@ -45,14 +45,17 @@ class _ARMixin(object):
 
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
-    _states_class = ARHMMStates
+    _states_class = ARHMMStatesEigen
 
 
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
-    _states_class = ARHSMMStates
+    _states_class = ARHSMMStatesEigen
 
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
-    _states_class = ARHMMStates
+    _states_class = ARHMMStatesEigen
+
+class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+    _states_class = ARHSMMStatesEigen
 
 # TODO
 # class ARHSMMIntNegBinVariant(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
