@@ -182,7 +182,7 @@ class AR_MNIW(GibbsSampling,_ARMaxLikelihood):
     @property
     def hypparams(self):
         return {name+'_0':val for name,val in
-                self._natural_to_standard(self.natural_hypparam)}
+                self._natural_to_standard(self.natural_hypparam).iteritems()}
 
     ### converting between natural and standard hyperparameters
 
@@ -212,6 +212,8 @@ class AR_MNIW(GibbsSampling,_ARMaxLikelihood):
         new.fullA = self.fullA.copy()
         new.sigma = self.sigma.copy()
         return new
+
+
 
 class AR_MNFixedSigma(_ARBase,GibbsSampling):
     def __init__(self,sigma,M_0,Uinv_0,Vinv_0,affine=False,
