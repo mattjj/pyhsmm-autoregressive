@@ -7,7 +7,7 @@ import pyhsmm
 
 from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, \
-        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesIntegerNegativeBinomial
+        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo
 from pyhsmm.util.general import rle
 
 class _ARMixin(object):
@@ -54,6 +54,9 @@ class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
-class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
-    _states_class = ARHSMMStatesIntegerNegativeBinomial
+# class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+#     _states_class = ARHSMMStatesIntegerNegativeBinomial
+
+class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
+    _states_class = ARHSMMStatesGeo
 
