@@ -10,10 +10,15 @@ from autoregressive.states import ARHMMStates, ARHSMMStates, \
         ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo
 from pyhsmm.util.general import rle
 
+# TODO model first observation
+
 class _ARMixin(object):
-    def __init__(self,nlags,*args,**kwargs):
+    def __init__(self,*args,**kwargs):
         super(_ARMixin,self).__init__(*args,**kwargs)
-        self.nlags = nlags
+
+    @property
+    def nlags(self):
+        return self.obs_distns[0].nlags
 
     def add_data(self,data,already_strided=False,**kwargs):
         strided_data = AR_striding(data,self.nlags) if not already_strided else data
@@ -39,14 +44,15 @@ class _ARMixin(object):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
-    def _get_parallel_kwargss(self,states_objs):
-        return [dict(already_strided=True,**out) for s,out in zip(
-            states_objs,super(_ARMixin,self)._get_parallel_kwargss(states_objs))]
-
+class ARHMM(_ARMixin,pyhsmm.models.HMM):
+    _states_class = ARHMMStatesEigen
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStatesEigen
 
+
+class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
+    _states_class = ARHSMMStatesEigen
 
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
     _states_class = ARHSMMStatesEigen
