@@ -1,11 +1,30 @@
 from __future__ import division
+import numpy as np
+
 from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen
 from pyhsmm.internals.hsmm_states import HSMMStatesPython, HSMMStatesEigen, \
         GeoHSMMStates
 
+from util import AR_striding
+
 class _ARStatesMixin(object):
+    @property
+    def D(self):
+        return self.obs_distns[0].D
+
+    @property
+    def nlags(self):
+        return self.obs_distns[0].nlags
+
     def generate_obs(self):
-        raise NotImplementedError # TODO
+        data = np.zeros((self.T+self.nlags,self.D))
+        # NOTE: first observations aren't modeled at the moment
+        data[:self.nlags] = np.random.normal(size=(self.nlags,self.D))
+        for idx, state in enumerate(self.stateseq):
+            data[idx+self.nlags] = \
+                self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
+        self.data = AR_striding(data,self.nlags)
+        return data
 
 class ARHMMStates(_ARStatesMixin,HMMStatesPython):
     pass

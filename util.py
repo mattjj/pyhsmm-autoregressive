@@ -22,24 +22,3 @@ def undo_AR_striding(strided_data,nlags):
             shape=(strided_data.shape[0]+nlags,strided_data.shape[1]/(nlags+1)),
             strides=(strided_data.shape[1]/(nlags+1)*sz,sz))
 
-def getardatadimension(strided_data):
-    # TODO doesn't work when data is copied
-    if isinstance(strided_data,np.ndarray):
-        return strided_data.strides[0] // strided_data.strides[1]
-    else:
-        return getardatadimension(strided_data[0])
-
-
-def getardatanlags(strided_data):
-    if isinstance(strided_data,np.ndarray):
-        return strided_data.shape[1] * strided_data.dtype.itemsize // strided_data.strides[0] - 1
-    else:
-        return getardatanlags(strided_data[0])
-
-def is_strided(data):
-    # TODO doesn't work when data is copied
-    if isinstance(data,list):
-        return all(is_strided(d) for d in data)
-    return data.ndim == 2 and \
-            data.strides[0] != data.dtype.itemsize * data.shape[1]
-
