@@ -10,12 +10,9 @@ from autoregressive.states import ARHMMStates, ARHSMMStates, \
         ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo
 from pyhsmm.util.general import rle
 
-# TODO model first observation
+# TODO model first observations?
 
 class _ARMixin(object):
-    def __init__(self,*args,**kwargs):
-        super(_ARMixin,self).__init__(*args,**kwargs)
-
     @property
     def nlags(self):
         return self.obs_distns[0].nlags
