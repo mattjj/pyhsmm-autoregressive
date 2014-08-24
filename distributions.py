@@ -21,7 +21,7 @@ class AutoRegression(Regression):
     @property
     def is_stable(self):
         D, nlags = self.D, self.nlags
-        mat = np.zeros((D*nlags,D*nlags)),
+        mat = np.zeros((D*nlags,D*nlags))
         mat[:-D,D:] = np.eye(D*(nlags-1))
         mat[-D:,:] = self.A
         return np.all(np.abs(np.linalg.eigvals(mat)) < 1.)
