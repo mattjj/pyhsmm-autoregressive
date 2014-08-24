@@ -12,7 +12,10 @@ from util import AR_striding, undo_AR_striding
 class AutoRegression(Regression):
     @property
     def nlags(self):
-        return self.D_in // self.D_out
+        if not self.affine:
+            return self.D_in // self.D_out
+        else:
+            return (self.D_in - 1) // self.D_out
 
     @property
     def D(self):
