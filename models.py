@@ -17,6 +17,10 @@ class _ARMixin(object):
     def nlags(self):
         return self.obs_distns[0].nlags
 
+    @property
+    def D(self):
+        return self.obs_distns[0].D
+
     def add_data(self,data,already_strided=False,**kwargs):
         strided_data = AR_striding(data,self.nlags) if not already_strided else data
         super(_ARMixin,self).add_data(data=strided_data,**kwargs)

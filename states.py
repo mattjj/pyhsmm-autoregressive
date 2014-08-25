@@ -19,7 +19,11 @@ class _ARStatesMixin(object):
     def generate_obs(self):
         data = np.zeros((self.T+self.nlags,self.D))
         # TODO: first observations aren't modeled at the moment
-        data[:self.nlags] = 10*np.random.normal(size=(self.nlags,self.D))
+        # TODO hacky way to pass in a prefix!
+        if hasattr(self.model,'prefix'):
+            data[:self.nlags] = self.model.prefix
+        else:
+            data[:self.nlags] = 10*np.random.normal(size=(self.nlags,self.D))
         for idx, state in enumerate(self.stateseq):
             data[idx+self.nlags] = \
                 self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
