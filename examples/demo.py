@@ -10,6 +10,8 @@ from pyhsmm.util.text import progprint_xrange
 import autoregressive.models as m
 import autoregressive.distributions as d
 
+T = 1000
+
 ###################
 #  generate data  #
 ###################
@@ -25,7 +27,7 @@ truemodel = m.ARHSMM(
             for state in range(len(As))],
         )
 
-data = truemodel.rvs(1000)
+data, labels = truemodel.generate(T)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -35,15 +37,21 @@ plt.plot(data[:,0],data[:,1],'bx-')
 ##################
 
 Nmax = 20
-model = m.ARWeakLimitHDPHSMM(
-        alpha=4.,gamma=4.,init_state_concentration=10.,
+model = m.ARHMMPossibleChangepoints(
+        alpha=4.,init_state_concentration=10.,
         obs_distns=[d.AutoRegression(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),K_0=np.eye(4))
-            for state in range(Nmax)],
-        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
             for state in range(Nmax)],
         )
 
-model.add_data(data,trunc=50)
+
+# !!! get the changepoints !!!
+# NOTE: usually these would be estimated by some external process; here I'm
+# totally cheating and just getting them from the truth
+temp = np.concatenate(((0,),truemodel.states_list[0].durations.cumsum()))
+changepoints = zip(temp[:-1],temp[1:])
+changepoints[-1] = (changepoints[-1][0],T) # because last duration might be censored
+
+model.add_data(data,changepoints=changepoints)
 
 ###############
 #  inference  #

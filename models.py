@@ -7,7 +7,8 @@ import pyhsmm
 
 from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, \
-        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo
+        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo, \
+        ARHMMStatesPossibleChangepoints
 from pyhsmm.util.general import rle
 
 # TODO model first observations?
@@ -62,4 +63,8 @@ class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
     _states_class = ARHSMMStatesGeo
+
+
+class ARHMMPossibleChangepoints(_ARMixin,pyhsmm.models.HMMPossibleChangepoints):
+    _states_class = ARHMMStatesPossibleChangepoints
 

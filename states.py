@@ -1,7 +1,8 @@
 from __future__ import division
 import numpy as np
 
-from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen
+from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen, \
+        HMMStatesPossibleChangepoints
 from pyhsmm.internals.hsmm_states import HSMMStatesPython, HSMMStatesEigen, \
         GeoHSMMStates
 
@@ -43,4 +44,8 @@ class ARHSMMStatesEigen(_ARStatesMixin,HSMMStatesEigen):
 
 class ARHSMMStatesGeo(_ARStatesMixin,GeoHSMMStates):
     pass
+
+class ARHMMStatesPossibleChangepoints(_ARStatesMixin,HMMStatesPossibleChangepoints):
+    def generate_obs(self):
+        raise NotImplementedError
 
