@@ -35,9 +35,16 @@ plt.plot(data[:,0],data[:,1],'bx-')
 ##################
 
 Nmax = 20
+affine = True
 model = m.ARWeakLimitHDPHSMM(
         alpha=4.,gamma=4.,init_state_concentration=10.,
-        obs_distns=[d.AutoRegression(nu_0=3,S_0=np.eye(2),M_0=np.zeros((2,4)),K_0=np.eye(4))
+        obs_distns=[
+            d.AutoRegression(
+                nu_0=3,
+                S_0=np.eye(2),
+                M_0=np.zeros((2,4+affine)),
+                K_0=np.eye(4+affine),
+                affine=affine)
             for state in range(Nmax)],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
             for state in range(Nmax)],
