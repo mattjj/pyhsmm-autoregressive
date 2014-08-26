@@ -22,8 +22,11 @@ class _ARStatesMixin(object):
 
     def generate_obs(self):
         data = np.zeros((self.T+self.nlags,self.D))
-        data[:self.nlags] = self.init_emission_distns[self.stateseq[0]]\
-                .rvs().reshape(data[:self.nlags].shape)
+        if hasattr(self.model,'prefix'):
+            data[:self.nlags] = self.model.prefix
+        else:
+            data[:self.nlags] = self.init_emission_distns[self.stateseq[0]]\
+                    .rvs().reshape(data[:self.nlags].shape)
         for idx, state in enumerate(self.stateseq):
             data[idx+self.nlags] = \
                 self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
