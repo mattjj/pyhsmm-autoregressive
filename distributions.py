@@ -31,5 +31,5 @@ class AutoRegression(Regression):
 
     def rvs(self,lagged_data):
         return super(AutoRegression,self).rvs(
-                x=np.atleast_2d(lagged_data.flatten()),return_xy=False)
+                x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
