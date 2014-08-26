@@ -16,18 +16,19 @@ class _ARStatesMixin(object):
     def nlags(self):
         return self.obs_distns[0].nlags
 
+    @property
+    def init_emission_distns(self):
+        return self.model.init_emission_distns
+
     def generate_obs(self):
         data = np.zeros((self.T+self.nlags,self.D))
-        # TODO: first observations aren't modeled at the moment
-        # TODO hacky way to pass in a prefix!
-        if hasattr(self.model,'prefix'):
-            data[:self.nlags] = self.model.prefix
-        else:
-            data[:self.nlags] = 10*np.random.normal(size=(self.nlags,self.D))
+        data[:self.nlags] = self.init_emission_distns[self.stateseq[0]]\
+                .rvs().reshape(data[:self.nlags].shape)
         for idx, state in enumerate(self.stateseq):
             data[idx+self.nlags] = \
                 self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
         self.data = AR_striding(data,self.nlags)
+
         return data
 
 class ARHMMStates(_ARStatesMixin,HMMStatesPython):
