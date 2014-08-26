@@ -50,7 +50,11 @@ class _ARMixin(object):
                 row[-self.D:] = self.obs_distns[state].rvs(lagged_data=row[:-self.D])
         else:
             for state, row in zip(s.stateseq[-timesteps:],s.data[-timesteps:]):
-                row[-self.D:] = self.obs_distns[state].A.dot(row[:-self.D])
+                o = self.obs_distns[state]
+                if not o.affine:
+                    row[-self.D:] = o.A.dot(row[:-self.D])
+                else:
+                    row[-self.D:] = o.A[:,:-1].dot(row[:-self.D]) + np.squeeze(o.A[:,-1])
 
         return full_data
 
