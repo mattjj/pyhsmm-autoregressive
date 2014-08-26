@@ -9,7 +9,8 @@ from pyhsmm.basic.distributions import Gaussian
 
 from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, \
-        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo
+        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo, \
+        ARHSMMStatesIntegerNegativeBinomialStates
 
 class _ARMixin(object):
     def __init__(self,init_emission_distn=None,**kwargs):
@@ -108,8 +109,8 @@ class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
-# class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
-#     _states_class = ARHSMMStatesIntegerNegativeBinomial
+class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+    _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
     _states_class = ARHSMMStatesGeo

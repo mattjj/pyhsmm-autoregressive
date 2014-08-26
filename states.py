@@ -4,6 +4,7 @@ import numpy as np
 from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen
 from pyhsmm.internals.hsmm_states import HSMMStatesPython, HSMMStatesEigen, \
         GeoHSMMStates
+from pyhsmm.internals.hsmm_inb_states import HSMMStatesIntegerNegativeBinomial
 
 from util import AR_striding
 
@@ -46,8 +47,9 @@ class ARHSMMStates(_ARStatesMixin,HSMMStatesPython):
 class ARHSMMStatesEigen(_ARStatesMixin,HSMMStatesEigen):
     pass
 
-# class ARHSMMStatesIntegerNegativeBinomial(_ARStatesMixin,HSMMStatesIntegerNegativeBinomial):
-#     pass
+class ARHSMMStatesIntegerNegativeBinomialStates(
+        _ARStatesMixin,HSMMStatesIntegerNegativeBinomial):
+    pass
 
 class ARHSMMStatesGeo(_ARStatesMixin,GeoHSMMStates):
     pass
