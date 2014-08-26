@@ -24,6 +24,29 @@ class _ARMixin(object):
         strided_data = AR_striding(data,self.nlags) if not strided else data
         super(_ARMixin,self).add_data(data=strided_data,**kwargs)
 
+    ### prediction
+
+    def predict(self,seed_data,timesteps,with_noise=False):
+        assert seed_data.shape[0] >= self.nlags
+
+        full_data = np.vstack((seed_data,np.nan*np.ones((timesteps,self.D))))
+        self.add_data(full_data)
+        s = self.states_list.pop()
+        s.resample() # fills in extra states
+
+        if with_noise:
+            for state, row in zip(s.stateseq[-timesteps:],s.data[-timesteps:]):
+                row[-self.D:] = self.obs_distns[state]\
+                        .rvs(lagged_data=row[:-self.D])
+        else:
+            for state, row in zip(s.stateseq[-timesteps:],s.data[-timesteps:]):
+                row[-self.D:] = self.obs_distns[state].A.dot(row[:-self.D])
+
+        return full_data
+
+    def fill_in(self,data):
+        raise NotImplementedError
+
     ### Gibbs
 
     def resample_parameters(self):
@@ -32,8 +55,7 @@ class _ARMixin(object):
 
     def resample_init_emission_distn(self):
         self.init_emission_distn.resample(
-            [s.data[:self.nlags].ravel()
-                for s in self.states_list if s.stateseq[0] == state])
+                [s.data[:self.nlags].ravel() for s in self.states_list])
 
     ### convenient properties
 
