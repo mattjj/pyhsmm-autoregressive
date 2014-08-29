@@ -35,7 +35,7 @@ plt.plot(data[:,0],data[:,1],'bx-')
 ##################
 
 Nmax = 20
-affine = False
+affine = True
 model = m.ARHMM(
         alpha=4.,
         init_state_distn='uniform',

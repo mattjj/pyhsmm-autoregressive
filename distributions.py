@@ -39,7 +39,6 @@ class AutoRegression(Regression):
 
     @property
     def _param_matrix(self):
-        assert not self.affine # TODO handle affine properly
         D, A, sigma = self.D, self.A, self.sigma
         sigma_inv = np.linalg.inv(sigma)
         parammat =  -1./2 * blockarray([

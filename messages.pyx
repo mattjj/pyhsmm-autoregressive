@@ -16,7 +16,7 @@ cdef extern from "messages.h":
     cdef cppclass dummy[Type]:
         dummy()
         Type resample_arhmm(
-            int M, int T, int D, int nlags,
+            int M, int T, int D, int nlags, bool affine,
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
@@ -76,7 +76,7 @@ def resample_arhmm(
     with nogil:
         for i in prange(K):
             likes[i] = ref.resample_arhmm(
-                    M,Ts[i],D,nlags,
+                    M,Ts[i],D,nlags,affine,
                     &pi_0[0],&A[0,0],
                     &params[0,0,0],&normalizers[0],
                     datas_v[i],

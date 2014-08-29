@@ -9,8 +9,6 @@
 using namespace Eigen;
 using namespace nptypes;
 
-// TODO gotta handle affine
-
 template <typename Type>
 class dummy
 {
@@ -21,7 +19,7 @@ class dummy
     }
 
     static Type resample_arhmm(
-            int M, int T, int D, int nlags,
+            int M, int T, int D, int nlags, bool affine,
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
@@ -29,12 +27,12 @@ class dummy
             Type *randseq,
             Type *alphan)
     {
-        int sz = D*(nlags+1);
         Map<Matrix<Type,Dynamic,Dynamic,RowMajor>,Aligned,OuterStride<>>
-            edata(data,T-nlags,sz,OuterStride<>(D));
+            edata(data,T-nlags,D*(nlags+1),OuterStride<>(D));
 
         NPMatrix<Type> eA(A,M,M);
 
+        int sz = D*(nlags+1) + affine;
         NPMatrix<Type> enatparams(natparams,M*sz,sz);
         NPMatrix<Type> estats(stats,M*sz,sz);
 
@@ -44,6 +42,9 @@ class dummy
 
         Type temp_buf[sz] __attribute__((aligned(16)));
         NPVector<Type> etemp(temp_buf,sz);
+        Type data_buff[sz] __attribute__((aligned(16)));
+        data_buff[sz-1] = affine;
+        NPRowVector<Type> data_buf(data_buff,sz);
         Type in_potential_buf[M] __attribute__((aligned(16)));
         NPRowVector<Type> ein_potential(in_potential_buf,M);
         Type likes_buf[M] __attribute__((aligned(16)));
@@ -56,13 +57,13 @@ class dummy
         for (int t=0; t < T-nlags; t++) {
             if ((edata.row(t).array() == edata.row(t).array()).all()) {
                 for (int m=0; m < M; m++) {
+                    data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
                     etemp =
                         enatparams.block(m*sz,0,sz,sz)
-                        * edata.row(t).transpose();
+                        * data_buf.transpose();
                         //.template selfadjointView<Lower>() * edata.row(t).transpose();
-                    elikes(m) = etemp.dot(edata.row(t).transpose()) - normalizers[m];
+                    elikes(m) = etemp.dot(data_buf.transpose()) - normalizers[m];
                 }
-
 
                 cmax = elikes.maxCoeff();
                 ealphan.row(t) = ein_potential.array() * (elikes.array() - cmax).exp();
@@ -72,7 +73,6 @@ class dummy
             } else {
                 ealphan.row(t) = ein_potential;
             }
-
 
             ein_potential = ealphan.row(t) * eA;
         }
@@ -86,9 +86,10 @@ class dummy
 
             if ((edata.row(t).array() == edata.row(t).array()).all()) {
                 counts[stateseq[t]] += 1;
+                data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
                 // NOTE: could do a rank-1 update
                 estats.block(stateseq[t]*sz,0,sz,sz).noalias()
-                    += edata.row(t).transpose() * edata.row(t);
+                    += data_buf.transpose() * data_buf;
             }
         }
 
