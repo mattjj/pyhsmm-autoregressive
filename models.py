@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 
 import pyhsmm
-from pyhsmm.util.general import rle
+from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
 
 from util import AR_striding, undo_AR_striding
@@ -139,11 +139,16 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     def resample_states(self,**kwargs):
         from messages import resample_arhmm
+        from itertools import repeat, chain
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
-            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = \
+                map(np.array,zip(*[o._param_matrix
+                    for o in chain(*[repeat(o,r) for o, r in zip(self.obs_distns,s.rs)])]))
+            assert params.shape[0] == s.hmm_bwd_pi_0.shape[0] == normalizers.shape[0] \
+                    == s.hmm_bwd_trans_matrix.shape[0]
             stats, loglikes = resample_arhmm(
-                    s.hmm_bwd_pi_0,s.hmm_bwd_trans_matrix, # NOTE: difference here
+                    s.hmm_bwd_pi_0,s.hmm_bwd_trans_matrix,
                     params,normalizers,
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
@@ -151,11 +156,13 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
                     self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
-                s._map_states() # NOTE: difference here
+                s._map_states()
                 s._normalizer = loglike
 
-            # TODO cant just map states... need to map counts and stats, too!
-            raise NotImplementedError
+            starts, ends = cumsum(s.rs,strict=True), cumsum(s.rs,strict=False)
+            stats = map(np.array,stats)
+            stats = [sum(stats[start:end]) for start, end in zip(starts,ends)]
+            assert len(stats) == len(self.obs_distns)
 
             self._obs_stats = stats
         else:
@@ -171,9 +178,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     @property
     def alphans(self):
-        if not hasattr(self,'_alphans'):
-            self._alphans = [np.empty((s.T,self.num_states)) for s in self.states_list]
-        return self._alphans
+        return [np.empty((s.T,sum(s.rs))) for s in self.states_list]
 
 
 class ARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
@@ -193,8 +198,7 @@ class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
 class ARWeakLimitHDPHSMMIntNegBin(
-        _ARMixin,
-        # _INBHSMMFastResamplingMixin,
+        _INBHSMMFastResamplingMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
