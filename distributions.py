@@ -7,6 +7,8 @@ from pyhsmm.basic.distributions import Regression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
+from pybasicbayes.util.general import blockarray
+
 from util import AR_striding, undo_AR_striding
 
 class AutoRegression(Regression):
@@ -38,7 +40,7 @@ class AutoRegression(Regression):
     @property
     def _param_matrix(self):
         assert not self.affine # TODO handle affine properly
-        A, sigma = self.A, self.sigma
+        D, A, sigma = self.D, self.A, self.sigma
         sigma_inv = np.linalg.inv(sigma)
         parammat =  -1./2 * blockarray([
             [A.T.dot(sigma_inv).dot(A), -A.T.dot(sigma_inv)],

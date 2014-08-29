@@ -109,11 +109,14 @@ class ARHMM(_ARMixin,pyhsmm.models.HMM):
             stats, loglikes = resample_arhmm(
                     s.pi_0,s.trans_matrix,
                     params,normalizers,
+                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
                     [np.random.uniform(size=s.T) for s in self.states_list])
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
                 s._normalizer = loglike
+
+            assert not any(np.isnan(mat).any() for stat in stats for mat in stat)
             self._obs_stats = stats
         else:
             self._obs_stats = None

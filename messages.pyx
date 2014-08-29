@@ -20,7 +20,7 @@ cdef extern from "messages.h":
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
-            Type *stats, int *counts, int32_t *stateseq,
+            Type *stats, int32_t *counts, int32_t *stateseq,
             Type *randseq) nogil
         void initParallel()
 
@@ -39,7 +39,7 @@ def resample_arhmm(
     cdef int K = len(datas)        # number of sequences
     cdef int D = datas[0].shape[1] # dimension of data (unstrided)
     cdef bool affine = params.shape[2] % D
-    cdef int nlags = (params.shape[2] - affine) / D
+    cdef int nlags = (params.shape[2] - affine) / D - 1
     cdef int32_t[::1] Ts = np.array([d.shape[0] for d in datas]).astype('int32')
 
     cdef vector[double[:,:]] datas_v = datas
@@ -58,7 +58,7 @@ def resample_arhmm(
 
     # NOTE: 2*K for false sharing
     cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
-    cdef int[:,::1] ns = np.zeros((2*K,M),dtype='int')
+    cdef int32_t[:,::1] ns = np.zeros((2*K,M),dtype='int32')
     cdef double[::1] likes = np.zeros(K)
 
     ref.initParallel()

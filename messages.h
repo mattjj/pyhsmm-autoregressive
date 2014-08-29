@@ -27,7 +27,7 @@ class dummy
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
-            Type *stats, int *counts, int32_t *stateseq,
+            Type *stats, int32_t *counts, int32_t *stateseq,
             Type *randseq)
     {
         Map<Matrix<Type,Dynamic,Dynamic,RowMajor>,Aligned,OuterStride<>>
