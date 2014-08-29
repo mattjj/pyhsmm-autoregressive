@@ -154,6 +154,9 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
                 s._map_states() # NOTE: difference here
                 s._normalizer = loglike
 
+            # TODO cant just map states... need to map counts and stats, too!
+            raise NotImplementedError
+
             self._obs_stats = stats
         else:
             self._obs_stats = None
@@ -190,7 +193,8 @@ class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
 class ARWeakLimitHDPHSMMIntNegBin(
-        _INBHSMMFastResamplingMixin,
+        _ARMixin,
+        # _INBHSMMFastResamplingMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
