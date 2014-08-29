@@ -99,6 +99,32 @@ class _ARMixin(object):
 
 class ARHMM(_ARMixin,pyhsmm.models.HMM):
     _states_class = ARHMMStatesEigen
+    _obs_stats = None
+
+    def resample_states(self,**kwargs):
+        from messages import resample_arhmm
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            stats, loglikes = resample_arhmm(
+                    s.pi_0,s.trans_matrix,
+                    params,normalizers,
+                    stateseqs,
+                    [np.random.uniform(size=s.T) for s in self.states_list])
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._normalizer = loglike
+            self._obs_stats = stats
+        else:
+            self._obs_stats = None
+
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for o, statmat in zip(self.obs_distns,self._obs_stats):
+                o.resample(stats=statmat)
+        else:
+            for o in self.obs_distns:
+                o.resample()
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStatesEigen
