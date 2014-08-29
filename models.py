@@ -142,11 +142,8 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         from itertools import repeat, chain
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
-            params, normalizers = \
-                map(np.array,zip(*[o._param_matrix
-                    for o in chain(*[repeat(o,r) for o, r in zip(self.obs_distns,s.rs)])]))
-            assert params.shape[0] == s.hmm_bwd_pi_0.shape[0] == normalizers.shape[0] \
-                    == s.hmm_bwd_trans_matrix.shape[0]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
             stats, loglikes = resample_arhmm(
                     s.hmm_bwd_pi_0,s.hmm_bwd_trans_matrix,
                     params,normalizers,
@@ -162,7 +159,6 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             starts, ends = cumsum(s.rs,strict=True), cumsum(s.rs,strict=False)
             stats = map(np.array,stats)
             stats = [sum(stats[start:end]) for start, end in zip(starts,ends)]
-            assert len(stats) == len(self.obs_distns)
 
             self._obs_stats = stats
         else:
@@ -198,7 +194,8 @@ class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
 class ARWeakLimitHDPHSMMIntNegBin(
-        _INBHSMMFastResamplingMixin,
+        # _INBHSMMFastResamplingMixin,
+        _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
