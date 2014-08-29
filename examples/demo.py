@@ -25,7 +25,7 @@ truemodel = m.ARHSMM(
             for state in range(len(As))],
         )
 
-data = truemodel.rvs(1000)
+data, labels = truemodel.generate(1000)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')

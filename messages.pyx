@@ -21,7 +21,7 @@ cdef extern from "messages.h":
             Type *natparams, Type *normalizers,
             Type *data,
             Type *stats, int32_t *counts, int32_t *stateseq,
-            Type *randseq) nogil
+            Type *randseq, Type *alphan) nogil
         void initParallel()
 
 def resample_arhmm(
@@ -31,7 +31,8 @@ def resample_arhmm(
         double[::1] normalizers,
         list datas,
         list stateseqs,
-        list randseqs):
+        list randseqs,
+        list alphans):
     cdef int i
     cdef dummy[double] ref
 
@@ -41,8 +42,6 @@ def resample_arhmm(
     cdef bool affine = params.shape[2] % D
     cdef int nlags = (params.shape[2] - affine) / D - 1
     cdef int32_t[::1] Ts = np.array([d.shape[0] for d in datas]).astype('int32')
-
-    cdef vector[double[:,:]] datas_v = datas
 
     cdef vector[int32_t*] stateseqs_v
     cdef int32_t[:] temp
@@ -56,6 +55,18 @@ def resample_arhmm(
         temp2 = randseqs[i]
         randseqs_v.push_back(&temp2[0])
 
+    cdef vector[double*] datas_v
+    cdef double[:,:] temp3
+    for i in range(K):
+        temp3 = datas[i]
+        datas_v.push_back(&temp3[0,0])
+
+    cdef vector[double*] alphans_v
+    cdef double[:,:] temp4
+    for i in range(K):
+        temp4 = alphans[i]
+        alphans_v.push_back(&temp4[0,0])
+
     # NOTE: 2*K for false sharing
     cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
     cdef int32_t[:,::1] ns = np.zeros((2*K,M),dtype='int32')
@@ -68,9 +79,9 @@ def resample_arhmm(
                     M,Ts[i],D,nlags,
                     &pi_0[0],&A[0,0],
                     &params[0,0,0],&normalizers[0],
-                    &datas_v[i][0,0],
-                    &stats[2*i,0,0,0],&ns[2*i,0],&stateseqs_v[i][0],
-                    &randseqs_v[i][0])
+                    datas_v[i],
+                    &stats[2*i,0,0,0],&ns[2*i,0],stateseqs_v[i],
+                    randseqs_v[i],alphans_v[i])
 
     allstats = []
     for statmat, n in zip(np.sum(stats,axis=0),np.sum(ns,axis=0)):

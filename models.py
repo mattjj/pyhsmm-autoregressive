@@ -111,12 +111,12 @@ class ARHMM(_ARMixin,pyhsmm.models.HMM):
                     params,normalizers,
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list])
+                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
                 s._normalizer = loglike
 
-            assert not any(np.isnan(mat).any() for stat in stats for mat in stat)
             self._obs_stats = stats
         else:
             self._obs_stats = None
@@ -128,6 +128,12 @@ class ARHMM(_ARMixin,pyhsmm.models.HMM):
         else:
             for o in self.obs_distns:
                 o.resample()
+
+    @property
+    def alphans(self):
+        if not hasattr(self,'_alphans'):
+            self._alphans = [np.empty((s.T,self.num_states)) for s in self.states_list]
+        return self._alphans
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStatesEigen
