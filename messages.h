@@ -2,14 +2,14 @@
 #include <stdint.h> // int32_t
 #include <omp.h> // omp_get_num_threads, omp_get_thread_num
 #include <limits> // infinity
-#include <iostream>
+#include <iostream> // debugging with cout
 
 #include "nptypes.h"
 #include "util.h"
 
 using namespace Eigen;
 using namespace nptypes;
-using namespace std;
+using namespace std; // debugging with cout
 
 // TODO gotta handle affine
 
@@ -33,7 +33,13 @@ class dummy
         Map<Matrix<Type,Dynamic,Dynamic,RowMajor>,Aligned,OuterStride<>>
             edata(data,T-nlags,D*(nlags+1),OuterStride<>(D));
 
+        cout << "T" << endl << T << endl << endl;
+
+        cout << "edata" << endl << edata << endl << endl;
+
         NPMatrix<Type> eA(A,M,M);
+
+        cout << "eA" << endl << eA << endl << endl;
 
         NPMatrix<Type> enatparams(natparams,M*D*(nlags+1),D*(nlags+1));
         NPMatrix<Type> estats(stats,D*(nlags+1),D*(nlags+1));
@@ -43,7 +49,7 @@ class dummy
         MatrixXd ealphan(T-nlags,M); // NOTE: memory allocation
 
         Type temp_buf[D*(nlags+1)] __attribute__((aligned(16)));
-        Map<Matrix<Type,Dynamic,1>,Aligned> etemp(temp_buf,D*(nlags+1));
+        NPVector<Type> etemp(temp_buf,D*(nlags+1));
         Type in_potential_buf[M] __attribute__((aligned(16)));
         NPRowVector<Type> ein_potential(in_potential_buf,M);
         Type likes_buf[M] __attribute__((aligned(16)));
@@ -63,12 +69,13 @@ class dummy
                     elikes(m) = etemp.dot(edata.row(t).transpose()) - normalizers[m];
                 }
 
+                cout << "elikes" << endl << elikes << endl << endl;
+
                 cmax = elikes.maxCoeff();
                 ealphan.row(t) = ein_potential.array() * (elikes.array() - cmax).exp();
                 norm = ealphan.row(t).sum();
                 ealphan.row(t) /= norm;
                 logtot += log(norm) + cmax;
-
             } else {
                 ealphan.row(t) = ein_potential;
             }
@@ -77,9 +84,11 @@ class dummy
         }
 
         // backward sampling and stats gathering
+        // TODO put this in the loop
         stateseq[T-nlags-1] =
             util::sample_discrete(M,ealphan.row(T-nlags-1).data(),randseq[T-1]);
         counts[stateseq[T-nlags-1]] += 1;
+        estats.template selfadjointView<Lower>().rankUpdate(edata.row(T-nlags-1).transpose(),1.);
         for (int t=T-nlags-2; t >= 0; t--) {
             elikes = eA.col(stateseq[t+1]).transpose().array() * ealphan.row(t).array();
             stateseq[t] = util::sample_discrete(M,elikes.data(),randseq[t]);
