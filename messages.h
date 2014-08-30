@@ -56,13 +56,13 @@ class dummy
         // likelihoods and forward messages
         ein_potential = NPMatrix<Type>(pi_0,1,M);
         for (int t=0; t < T-nlags; t++) {
-            if (good_data[t] = (edata.row(t).array() == edata.row(t).array()).all()) {
+            if (good_data[t] = likely((edata.row(t).array() == edata.row(t).array()).all())) {
                 for (int m=0; m < M; m++) {
                     data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
                     etemp.noalias() =
                         enatparams.block(m*sz,0,sz,sz)
                         * data_buf.transpose();
-                        //.template selfadjointView<Lower>() * data_buf.transpose();
+                        //.template selfadjointView<Lower>() * data_buf.transpose(); // actually slower
                     elikes(m) = etemp.dot(data_buf.transpose()) - normalizers[m];
                 }
 
@@ -102,7 +102,7 @@ class dummy
         // undo the extra trans count
         etranscounts(stateseq[T-nlags-1],0) -= 1;
 
-        // symmetrize statistics (asymm storage due to rankUpdate)
+        // symmetrize statistics (asymmetric storage due to rankUpdate)
         for (int m=0; m < M; m++) {
             estats.block(m*sz,0,sz,sz).template triangularView<Upper>()
                 = estats.block(m*sz,0,sz,sz).transpose();
