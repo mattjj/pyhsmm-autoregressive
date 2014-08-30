@@ -99,13 +99,14 @@ class _ARMixin(object):
 
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
+    _transcounts = []
 
     def resample_states(self,**kwargs):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
-            stats, loglikes = resample_arhmm(
+            stats, transcounts, loglikes = resample_arhmm(
                     s.pi_0,s.trans_matrix,
                     params,normalizers,
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
@@ -117,8 +118,10 @@ class _HMMFastResamplingMixin(_ARMixin):
                 s._normalizer = loglike
 
             self._obs_stats = stats
+            self._transcounts = transcounts
         else:
             self._obs_stats = None
+            self._transcounts = []
 
     def resample_obs_distns(self):
         if self._obs_stats is not None:
@@ -127,6 +130,9 @@ class _HMMFastResamplingMixin(_ARMixin):
         else:
             for o in self.obs_distns:
                 o.resample()
+
+    def resample_trans_distn(self):
+        self.trans_distn.resample(trans_counts=self._transcounts)
 
     @property
     def alphans(self):

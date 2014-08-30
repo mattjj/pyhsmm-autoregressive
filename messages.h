@@ -23,7 +23,7 @@ class dummy
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
-            Type *stats, int32_t *counts, int32_t *stateseq,
+            Type *stats, int32_t *counts, int32_t *transcounts, int32_t *stateseq,
             Type *randseq,
             Type *alphan)
     {
@@ -35,6 +35,7 @@ class dummy
         int sz = D*(nlags+1) + affine;
         NPMatrix<Type> enatparams(natparams,M*sz,sz);
         NPMatrix<Type> estats(stats,M*sz,sz);
+        NPMatrix<int32_t> etranscounts(transcounts,M,M);
 
         // allocate temporaries
         NPMatrix<Type> ealphan(alphan,T-nlags,M);
@@ -48,13 +49,14 @@ class dummy
         NPRowVector<Type> ein_potential(in_potential_buf,M);
         Type likes_buf[M] __attribute__((aligned(32)));
         NPRowVector<Type> elikes(likes_buf,M);
+        bool good_data[T-nlags];
 
         Type norm, cmax, logtot = 0.;
 
         // likelihoods and forward messages
         ein_potential = NPMatrix<Type>(pi_0,1,M);
         for (int t=0; t < T-nlags; t++) {
-            if ((edata.row(t).array() == edata.row(t).array()).all()) {
+            if (good_data[t] = (edata.row(t).array() == edata.row(t).array()).all()) {
                 for (int m=0; m < M; m++) {
                     data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
                     etemp.noalias() =
@@ -78,12 +80,16 @@ class dummy
 
         // backward sampling and stats gathering
         ein_potential.setOnes();
+        int next_state = 0;
         for (int t=T-nlags-1; t >= 0; t--) {
             elikes = ein_potential.array() * ealphan.row(t).array();
             stateseq[t] = util::sample_discrete(M,elikes.data(),randseq[t]);
-            ein_potential = eA.col(stateseq[t]).transpose();
+            etranscounts(stateseq[t],next_state) += 1;
 
-            if ((edata.row(t).array() == edata.row(t).array()).all()) {
+            ein_potential = eA.col(stateseq[t]).transpose();
+            next_state = stateseq[t];
+
+            if (good_data[t]) {
                 counts[stateseq[t]] += 1;
                 data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
                 // estats.block(stateseq[t]*sz,0,sz,sz).noalias()
@@ -92,6 +98,9 @@ class dummy
                     .template selfadjointView<Lower>().rankUpdate(data_buf.transpose(),1.);
             }
         }
+
+        // undo the extra trans count
+        etranscounts(stateseq[T-nlags-1],0) -= 1;
 
         // symmetrize statistics (asymm storage due to rankUpdate)
         for (int m=0; m < M; m++) {

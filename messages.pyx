@@ -20,7 +20,7 @@ cdef extern from "messages.h":
             Type *pi_0, Type *A,
             Type *natparams, Type *normalizers,
             Type *data,
-            Type *stats, int32_t *counts, int32_t *stateseq,
+            Type *stats, int32_t *counts, int32_t *transcounts, int32_t *stateseq,
             Type *randseq, Type *alphan) nogil
         void initParallel()
 
@@ -70,6 +70,7 @@ def resample_arhmm(
     # NOTE: 2*K for false sharing
     cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
     cdef int32_t[:,::1] ns = np.zeros((2*K,M),dtype='int32')
+    cdef int32_t[:,:,::1] transcounts = np.zeros((2*K,M,M),dtype='int32')
     cdef double[::1] likes = np.zeros(K)
 
     ref.initParallel()
@@ -80,13 +81,13 @@ def resample_arhmm(
                     &pi_0[0],&A[0,0],
                     &params[0,0,0],&normalizers[0],
                     datas_v[i],
-                    &stats[2*i,0,0,0],&ns[2*i,0],stateseqs_v[i],
-                    randseqs_v[i],alphans_v[i])
+                    &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
+                    stateseqs_v[i], randseqs_v[i],alphans_v[i])
 
     allstats = []
-    for statmat, n in zip(np.sum(stats,axis=0),np.sum(ns,axis=0)):
+    for statmat, n in zip(np.sum(stats,0),np.sum(ns,0)):
         xxT, yxT, yyT = statmat[:-D,:-D], statmat[-D:,:-D], statmat[-D:,-D:]
         allstats.append([yyT,yxT,xxT,n])
 
-    return allstats, np.asarray(likes)
+    return allstats, np.sum(transcounts,axis=0), np.asarray(likes)
 
