@@ -37,7 +37,6 @@ class dummy
         NPMatrix<Type> estats(stats,M*sz,sz);
         NPMatrix<int32_t> etranscounts(transcounts,M,M);
 
-        // allocate temporaries
         NPMatrix<Type> ealphan(alphan,T-nlags,M);
 
         Type temp_buf[sz] __attribute__((aligned(32)));
