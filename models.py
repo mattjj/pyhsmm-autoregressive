@@ -6,6 +6,8 @@ from matplotlib import cm
 import pyhsmm
 from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
+from pyhsmm.util.profiling import line_profiled
+PROFILING = True
 
 from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, \
@@ -97,10 +99,13 @@ class _ARMixin(object):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
+### next two classes are for low-level code
+
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
     _transcounts = []
 
+    @line_profiled
     def resample_states(self,**kwargs):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
@@ -199,10 +204,7 @@ class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
-class ARWeakLimitHDPHSMMIntNegBin(
-        # _INBHSMMFastResamplingMixin,
-        _ARMixin,
-        pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
