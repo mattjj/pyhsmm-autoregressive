@@ -138,8 +138,8 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
 
     def resample_states(self,**kwargs):
+        # TODO only use this when the number/size of sequences warrant it
         from messages import resample_arhmm
-        from itertools import repeat, chain
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))

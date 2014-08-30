@@ -38,16 +38,15 @@ class dummy
 
         // allocate temporaries
         NPMatrix<Type> ealphan(alphan,T-nlags,M);
-        // MatrixXd ealphan(T-nlags,M); // NOTE: memory allocation
 
-        Type temp_buf[sz] __attribute__((aligned(16)));
+        Type temp_buf[sz] __attribute__((aligned(32)));
         NPVector<Type> etemp(temp_buf,sz);
-        Type data_buff[sz] __attribute__((aligned(16)));
+        Type data_buff[sz] __attribute__((aligned(32)));
         data_buff[sz-1] = affine;
         NPRowVector<Type> data_buf(data_buff,sz);
-        Type in_potential_buf[M] __attribute__((aligned(16)));
+        Type in_potential_buf[M] __attribute__((aligned(32)));
         NPRowVector<Type> ein_potential(in_potential_buf,M);
-        Type likes_buf[M] __attribute__((aligned(16)));
+        Type likes_buf[M] __attribute__((aligned(32)));
         NPRowVector<Type> elikes(likes_buf,M);
 
         Type norm, cmax, logtot = 0.;
@@ -58,10 +57,10 @@ class dummy
             if ((edata.row(t).array() == edata.row(t).array()).all()) {
                 for (int m=0; m < M; m++) {
                     data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
-                    etemp =
+                    etemp.noalias() =
                         enatparams.block(m*sz,0,sz,sz)
                         * data_buf.transpose();
-                        //.template selfadjointView<Lower>() * edata.row(t).transpose();
+                        //.template selfadjointView<Lower>() * data_buf.transpose();
                     elikes(m) = etemp.dot(data_buf.transpose()) - normalizers[m];
                 }
 
@@ -87,10 +86,17 @@ class dummy
             if ((edata.row(t).array() == edata.row(t).array()).all()) {
                 counts[stateseq[t]] += 1;
                 data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
-                // NOTE: could do a rank-1 update
-                estats.block(stateseq[t]*sz,0,sz,sz).noalias()
-                    += data_buf.transpose() * data_buf;
+                // estats.block(stateseq[t]*sz,0,sz,sz).noalias()
+                //     += data_buf.transpose() * data_buf;
+                estats.block(stateseq[t]*sz,0,sz,sz)
+                    .template selfadjointView<Lower>().rankUpdate(data_buf.transpose(),1.);
             }
+        }
+
+        // symmetrize statistics (asymm storage due to rankUpdate)
+        for (int m=0; m < M; m++) {
+            estats.block(m*sz,0,sz,sz).template triangularView<Upper>()
+                = estats.block(m*sz,0,sz,sz).transpose();
         }
 
         return logtot;
