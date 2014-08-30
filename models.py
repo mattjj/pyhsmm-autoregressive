@@ -110,20 +110,37 @@ class _HMMFastResamplingMixin(_ARMixin):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            randseqs = [np.random.uniform(size=s.T) for s in self.states_list]
+
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
-            stats, transcounts, loglikes = resample_arhmm(
+
+            import sys
+            print 'ENTER'
+            sys.stdout.flush()
+            stats, ns, transcounts, loglikes = resample_arhmm(
                     s.pi_0,s.trans_matrix,
                     params,normalizers,
-                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
-                    stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list],
-                    self.alphans)
+                    self.D,
+                    np.asarray([s.T for s in self.states_list],dtype='int32'),
+                    np.asarray([s.data.ctypes.data for s in self.states_list],dtype='int64'),
+                    np.asarray([s.ctypes.data for s in stateseqs],dtype='int64'),
+                    np.asarray([r.ctypes.data for r in randseqs],dtype='int64'),
+                    np.asarray([a.ctypes.data for a in self.alphans],dtype='int64'))
+            print 'EXIT'
+            sys.stdout.flush()
+
+            allstats = []
+            D = self.D
+            for statmat, n in zip(np.sum(stats,0),np.sum(ns,0)):
+                xxT, yxT, yyT = statmat[:-D,:-D], statmat[-D:,:-D], statmat[-D:,-D:]
+                allstats.append([yyT,yxT,xxT,n])
+
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
                 s._normalizer = loglike
 
-            self._obs_stats = stats
-            self._transcounts = transcounts
+            self._obs_stats = allstats
+            self._transcounts = np.sum(transcounts,axis=0)
         else:
             self._obs_stats = None
             self._transcounts = []

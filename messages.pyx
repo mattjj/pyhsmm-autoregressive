@@ -2,15 +2,21 @@
 # distutils: extra_compile_args = -O3 -w -DNDEBUG -fopenmp -std=c++11 -DEIGEN_NO_MALLOC
 # distutils: extra_link_args = -fopenmp
 # cython: boundscheck = False
+# cython: nonecheck = False
+
+import sys
 
 import numpy as np
 cimport numpy as np
+
+from libc.stdio cimport fflush, printf, stdout
 
 from libcpp.vector cimport vector
 from libcpp cimport bool
 from libc.stdint cimport int32_t, int64_t
 from cython cimport floating
 from cython.parallel import prange
+
 
 cdef extern from "messages.h":
     cdef cppclass dummy[Type]:
@@ -29,43 +35,19 @@ def resample_arhmm(
         double[:,::1] A,
         double[:,:,::1] params,
         double[::1] normalizers,
-        list datas,
-        list stateseqs,
-        list randseqs,
-        list alphans):
-    cdef int i
+        int D,
+        int32_t[::1] Ts,
+        int64_t[::1] datas,
+        int64_t[::1] stateseqs,
+        int64_t[::1] randseqs,
+        int64_t[::1] alphans):
+    cdef int i, j
     cdef dummy[double] ref
 
     cdef int M = params.shape[0]   # number of states
-    cdef int K = len(datas)        # number of sequences
-    cdef int D = datas[0].shape[1] # dimension of data (unstrided)
+    cdef int K = datas.shape[0]    # number of sequences
     cdef bool affine = params.shape[2] % D
     cdef int nlags = (params.shape[2] - affine) / D - 1
-    cdef int32_t[::1] Ts = np.array([d.shape[0] for d in datas]).astype('int32')
-
-    cdef vector[int32_t*] stateseqs_v
-    cdef int32_t[:] temp
-    for i in range(K):
-        temp = stateseqs[i]
-        stateseqs_v.push_back(&temp[0])
-
-    cdef vector[double*] randseqs_v
-    cdef double[:] temp2
-    for i in range(K):
-        temp2 = randseqs[i]
-        randseqs_v.push_back(&temp2[0])
-
-    cdef vector[double*] datas_v
-    cdef double[:,:] temp3
-    for i in range(K):
-        temp3 = datas[i]
-        datas_v.push_back(&temp3[0,0])
-
-    cdef vector[double*] alphans_v
-    cdef double[:,:] temp4
-    for i in range(K):
-        temp4 = alphans[i]
-        alphans_v.push_back(&temp4[0,0])
 
     # NOTE: 2*K for false sharing
     cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
@@ -73,21 +55,20 @@ def resample_arhmm(
     cdef int32_t[:,:,::1] transcounts = np.zeros((2*K,M,M),dtype='int32')
     cdef double[::1] likes = np.zeros(K)
 
-    ref.initParallel()
+    # ref.initParallel()
     with nogil:
-        for i in prange(K):
-            likes[i] = ref.resample_arhmm(
-                    M,Ts[i],D,nlags,affine,
-                    &pi_0[0],&A[0,0],
-                    &params[0,0,0],&normalizers[0],
-                    datas_v[i],
-                    &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
-                    stateseqs_v[i], randseqs_v[i],alphans_v[i])
+        for j in prange(K+1):
+            if j != 0:
+                i = j-1
+                likes[i] = ref.resample_arhmm(
+                        M,Ts[i],D,nlags,affine,
+                        &pi_0[0],&A[0,0],
+                        &params[0,0,0],&normalizers[0],
+                        <double*>datas[i],
+                        &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
+                        <int32_t*>stateseqs[i],<double*>randseqs[i],<double*>alphans[i])
+            printf("%d finished!\n",j)
+            fflush(stdout)
 
-    allstats = []
-    for statmat, n in zip(np.sum(stats,0),np.sum(ns,0)):
-        xxT, yxT, yyT = statmat[:-D,:-D], statmat[-D:,:-D], statmat[-D:,-D:]
-        allstats.append([yyT,yxT,xxT,n])
-
-    return allstats, np.sum(transcounts,axis=0), np.asarray(likes)
+    return np.asarray(stats), np.asarray(ns), np.asarray(transcounts), np.asarray(likes)
 
