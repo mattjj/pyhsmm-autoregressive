@@ -24,6 +24,9 @@ cdef extern from "messages.h":
             Type *randseq, Type *alphan) nogil
         void initParallel()
 
+cdef dummy[double] ref
+ref.initParallel()
+
 def resample_arhmm(
         double[::1] pi_0,
         double[:,::1] A,
@@ -73,7 +76,7 @@ def resample_arhmm(
     cdef int32_t[:,:,::1] transcounts = np.zeros((2*K,M,M),dtype='int32')
     cdef double[::1] likes = np.zeros(K)
 
-    ref.initParallel()
+    # ref.initParallel()
     with nogil:
         for j in prange(K+1):
             if j != 0:
