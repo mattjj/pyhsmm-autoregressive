@@ -7,7 +7,7 @@ from pyhsmm.basic.distributions import Regression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
-from pybasicbayes.util.general import blockarray
+from pyhsmm.basic.pybasicbayes.util.general import blockarray
 
 from util import AR_striding, undo_AR_striding
 
