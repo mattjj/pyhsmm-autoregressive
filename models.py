@@ -155,7 +155,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
-            stats, loglikes = resample_arhmm(
+            stats, _, loglikes = resample_arhmm(
                     s.hmm_bwd_pi_0,s.hmm_bwd_trans_matrix,
                     params,normalizers,
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
@@ -204,7 +204,9 @@ class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
-class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+class ARWeakLimitHDPHSMMIntNegBin(
+        _INBHSMMFastResamplingMixin,
+        pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
