@@ -33,7 +33,7 @@ def resample_arhmm(
         list stateseqs,
         list randseqs,
         list alphans):
-    cdef int i
+    cdef int i, j
     cdef dummy[double] ref
 
     cdef int M = params.shape[0]   # number of states
@@ -75,14 +75,16 @@ def resample_arhmm(
 
     ref.initParallel()
     with nogil:
-        for i in prange(K):
-            likes[i] = ref.resample_arhmm(
-                    M,Ts[i],D,nlags,affine,
-                    &pi_0[0],&A[0,0],
-                    &params[0,0,0],&normalizers[0],
-                    datas_v[i],
-                    &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
-                    stateseqs_v[i], randseqs_v[i],alphans_v[i])
+        for j in prange(K+1):
+            if j != 0:
+                i = j-1
+                likes[i] = ref.resample_arhmm(
+                        M,Ts[i],D,nlags,affine,
+                        &pi_0[0],&A[0,0],
+                        &params[0,0,0],&normalizers[0],
+                        datas_v[i],
+                        &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
+                        stateseqs_v[i], randseqs_v[i],alphans_v[i])
 
     allstats = []
     for statmat, n in zip(np.sum(stats,0),np.sum(ns,0)):
