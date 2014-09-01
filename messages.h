@@ -66,7 +66,7 @@ class dummy
                     etemp.noalias() =
                         enatparams.block(m*sz,0,sz,sz)
                         * data_buf.transpose();
-                        //.template selfadjointView<Lower>() * data_buf.transpose(); // actually slower
+                        //.template selfadjointView<Lower>() * data_buf.transpose(); // slower
                     elikes(m) = etemp.dot(data_buf.transpose()) - normalizers[m];
                 }
 
