@@ -136,8 +136,8 @@ class _HMMFastResamplingMixin(_ARMixin):
             for o in self.obs_distns:
                 o.resample()
 
-    def resample_trans_distn(self):
-        self.trans_distn.resample(trans_counts=self._transcounts)
+    # def resample_trans_distn(self):
+    #     self.trans_distn.resample(trans_counts=self._transcounts)
 
     @property
     def alphans(self):
@@ -194,14 +194,13 @@ class ARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
 class ARWeakLimitHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStatesEigen
 
-
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
     _states_class = ARHSMMStatesEigen
 
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
     _states_class = ARHSMMStatesEigen
 
-class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
+class ARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
 class ARWeakLimitHDPHSMMIntNegBin(
