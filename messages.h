@@ -42,7 +42,6 @@ class dummy
         Type temp_buf[sz] __attribute__((aligned(32)));
         NPVector<Type> etemp(temp_buf,sz);
         Type data_buff[sz] __attribute__((aligned(32)));
-        data_buff[sz-1] = affine;
         NPRowVector<Type> data_buf(data_buff,sz);
         Type in_potential_buf[M] __attribute__((aligned(32)));
         NPRowVector<Type> ein_potential(in_potential_buf,M);
@@ -51,13 +50,19 @@ class dummy
         bool good_data[T-nlags];
 
         Type norm, cmax, logtot = 0.;
+        data_buff[D*nlags] = affine; // extra affine 1.
 
         // likelihoods and forward messages
         ein_potential = NPMatrix<Type>(pi_0,1,M);
         for (int t=0; t < T-nlags; t++) {
             if (good_data[t] = likely((edata.row(t).array() == edata.row(t).array()).all())) {
                 for (int m=0; m < M; m++) {
-                    data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
+                    if (affine) {
+                        data_buf.segment(0,D*nlags) = edata.row(t).segment(0,D*nlags);
+                        data_buf.segment(D*nlags+1,D) = edata.row(t).segment(D*nlags,D);
+                    } else {
+                        data_buf = edata.row(t);
+                    }
                     etemp.noalias() =
                         enatparams.block(m*sz,0,sz,sz)
                         * data_buf.transpose();
@@ -90,7 +95,13 @@ class dummy
 
             if (good_data[t]) {
                 counts[stateseq[t]] += 1;
-                data_buf.segment(affine,D*(nlags+1)) = edata.row(t);
+
+                if (affine) {
+                    data_buf.segment(0,D*nlags) = edata.row(t).segment(0,D*nlags);
+                    data_buf.segment(D*nlags+1,D) = edata.row(t).segment(D*nlags,D);
+                } else {
+                    data_buf = edata.row(t);
+                }
                 // estats.block(stateseq[t]*sz,0,sz,sz).noalias()
                 //     += data_buf.transpose() * data_buf;
                 estats.block(stateseq[t]*sz,0,sz,sz)
