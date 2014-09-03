@@ -1,7 +1,8 @@
 from __future__ import division
 import numpy as np
 
-from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen
+from pyhsmm.internals.hmm_states import HMMStatesPython, HMMStatesEigen, \
+        _SeparateTransMixin
 from pyhsmm.internals.hsmm_states import HSMMStatesPython, HSMMStatesEigen, \
         GeoHSMMStates
 from pyhsmm.internals.hsmm_inb_states import HSMMStatesIntegerNegativeBinomial
@@ -52,5 +53,16 @@ class ARHSMMStatesIntegerNegativeBinomialStates(
     pass
 
 class ARHSMMStatesGeo(_ARStatesMixin,GeoHSMMStates):
+    pass
+
+class ARHMMStatesEigenSeparateTrans(_SeparateTransMixin,ARHMMStatesEigen):
+    pass
+
+class ARHSMMStatesEigenSeparateTrans(_SeparateTransMixin,ARHSMMStatesEigen):
+    pass
+
+class ARHSMMStatesIntegerNegativeBinomialStatesSeparateTrans(
+        _SeparateTransMixin,
+        ARHSMMStatesIntegerNegativeBinomialStates):
     pass
 

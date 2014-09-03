@@ -29,6 +29,11 @@ data, labels = truemodel.generate(1000)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
+plt.gcf().suptitle('data')
+
+plt.figure()
+truemodel.plot()
+plt.gcf().suptitle('truth')
 
 ##################
 #  create model  #
@@ -60,6 +65,7 @@ for itr in progprint_xrange(100):
 
 plt.figure()
 model.plot()
+plt.gcf().suptitle('sampled')
 
 plt.figure()
 colors = ['b','r','y','k','g']

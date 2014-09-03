@@ -28,8 +28,8 @@ cdef dummy[double] ref
 ref.initParallel()
 
 def resample_arhmm(
-        double[::1] pi_0,
-        double[:,::1] A,
+        list pi_0s,
+        list As,
         double[:,:,::1] params,
         double[::1] normalizers,
         list datas,
@@ -70,6 +70,16 @@ def resample_arhmm(
         temp4 = alphans[i]
         alphans_v.push_back(&temp4[0,0])
 
+    cdef vector[double*] As_v
+    for i in range(K):
+        temp4 = As[i]
+        As_v.push_back(&temp4[0,0])
+
+    cdef vector[double*] pi_0s_v
+    for i in range(K):
+        temp2 = pi_0s[i]
+        pi_0s_v.push_back(&temp2[0])
+
     # NOTE: 2*K for false sharing
     cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
     cdef int32_t[:,::1] ns = np.zeros((2*K,M),dtype='int32')
@@ -83,7 +93,7 @@ def resample_arhmm(
                 i = j-1
                 likes[i] = ref.resample_arhmm(
                         M,Ts[i],D,nlags,affine,
-                        &pi_0[0],&A[0,0],
+                        pi_0s_v[i],As_v[i],
                         &params[0,0,0],&normalizers[0],
                         datas_v[i],
                         &stats[2*i,0,0,0],&ns[2*i,0],&transcounts[2*i,0,0],
