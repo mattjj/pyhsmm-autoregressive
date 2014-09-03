@@ -4,8 +4,10 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 
 import pyhsmm
-from pyhsmm.util.general import rle
+from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
+from pyhsmm.util.profiling import line_profiled
+PROFILING = True
 
 from util import AR_striding, undo_AR_striding
 from autoregressive.states import ARHMMStates, ARHSMMStates, \
@@ -97,12 +99,100 @@ class _ARMixin(object):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
-class ARHMM(_ARMixin,pyhsmm.models.HMM):
+### next two classes are for low-level code
+
+class _HMMFastResamplingMixin(_ARMixin):
+    _obs_stats = None
+    _transcounts = []
+
+    @line_profiled
+    def resample_states(self,**kwargs):
+        from messages import resample_arhmm
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            stats, transcounts, loglikes = resample_arhmm(
+                    s.pi_0,s.trans_matrix,
+                    params,normalizers,
+                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._normalizer = loglike
+
+            self._obs_stats = stats
+            self._transcounts = transcounts
+        else:
+            self._obs_stats = None
+            self._transcounts = []
+
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for o, statmat in zip(self.obs_distns,self._obs_stats):
+                o.resample(stats=statmat)
+        else:
+            for o in self.obs_distns:
+                o.resample()
+
+    # def resample_trans_distn(self):
+    #     self.trans_distn.resample(trans_counts=self._transcounts)
+
+    @property
+    def alphans(self):
+        if not hasattr(self,'_alphans'):
+            self._alphans = [np.empty((s.T,self.num_states)) for s in self.states_list]
+        return self._alphans
+
+class _INBHSMMFastResamplingMixin(_ARMixin):
+    _obs_stats = None
+
+    def resample_states(self,**kwargs):
+        # TODO only use this when the number/size of sequences warrant it
+        from messages import resample_arhmm
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
+            stats, _, loglikes = resample_arhmm(
+                    s.hmm_bwd_pi_0,s.hmm_bwd_trans_matrix,
+                    params,normalizers,
+                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._map_states()
+                s._normalizer = loglike
+
+            starts, ends = cumsum(s.rs,strict=True), cumsum(s.rs,strict=False)
+            stats = map(np.array,stats)
+            stats = [sum(stats[start:end]) for start, end in zip(starts,ends)]
+
+            self._obs_stats = stats
+        else:
+            self._obs_stats = None
+
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for o, statmat in zip(self.obs_distns,self._obs_stats):
+                o.resample(stats=statmat)
+        else:
+            for o in self.obs_distns:
+                o.resample()
+
+    @property
+    def alphans(self):
+        return [np.empty((s.T,sum(s.rs))) for s in self.states_list]
+
+
+class ARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
     _states_class = ARHMMStatesEigen
 
-class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
+class ARWeakLimitHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitHDPHMM):
     _states_class = ARHMMStatesEigen
-
 
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
     _states_class = ARHSMMStatesEigen
@@ -110,11 +200,21 @@ class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
     _states_class = ARHSMMStatesEigen
 
-class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
+class ARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
-class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+class ARWeakLimitStickyHDPHMMPython(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
+    _states_class = ARHMMStatesEigen
+
+class ARWeakLimitHDPHSMMIntNegBin(
+        _INBHSMMFastResamplingMixin,
+        pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
+
+class ARWeakLimitHDPHSMMIntNegBinPython(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+    _states_class = ARHSMMStatesIntegerNegativeBinomialStates
+
+
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
     _states_class = ARHSMMStatesGeo

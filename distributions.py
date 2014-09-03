@@ -7,6 +7,8 @@ from pyhsmm.basic.distributions import Regression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
+from pyhsmm.basic.pybasicbayes.util.general import blockarray
+
 from util import AR_striding, undo_AR_striding
 
 class AutoRegression(Regression):
@@ -32,4 +34,17 @@ class AutoRegression(Regression):
     def rvs(self,lagged_data):
         return super(AutoRegression,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
+
+    # for low-level code
+
+    @property
+    def _param_matrix(self):
+        D, A, sigma = self.D, self.A, self.sigma
+        sigma_inv = np.linalg.inv(sigma)
+        parammat =  -1./2 * blockarray([
+            [A.T.dot(sigma_inv).dot(A), -A.T.dot(sigma_inv)],
+            [-sigma_inv.dot(A), sigma_inv]
+            ])
+        normalizer = D/2*np.log(2*np.pi) + np.log(np.diag(np.linalg.cholesky(sigma))).sum()
+        return parammat, normalizer
 
