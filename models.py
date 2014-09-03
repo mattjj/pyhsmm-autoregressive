@@ -203,10 +203,18 @@ class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
 class ARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     _states_class = ARHMMStatesEigen
 
+class ARWeakLimitStickyHDPHMMPython(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
+    _states_class = ARHMMStatesEigen
+
 class ARWeakLimitHDPHSMMIntNegBin(
         _INBHSMMFastResamplingMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
+
+class ARWeakLimitHDPHSMMIntNegBinPython(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+    _states_class = ARHSMMStatesIntegerNegativeBinomialStates
+
+
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
     _states_class = ARHSMMStatesGeo
