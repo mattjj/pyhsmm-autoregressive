@@ -95,8 +95,8 @@ class _ARMixin(object):
             starts = np.concatenate(((0,),durs.cumsum()))
             for state,start,dur in zip(stateseq_norep,starts,durs):
                 plt.plot(
-                        np.arange(start,start+data[start:start+dur].shape[0]),
-                        data[start:start+dur],
+                        np.arange(start,start+data[start:start+dur+1].shape[0]),
+                        data[start:start+dur+1],
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
@@ -153,18 +153,21 @@ class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
     _transcounts = []
 
+    def add_data(self,data,**kwargs):
+        super(_HMMFastResamplingMixin,self).add_data(data.astype('float32'),**kwargs)
+
     def resample_states(self,**kwargs):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             stats, transcounts, loglikes = resample_arhmm(
-                    [s.pi_0 for s in self.states_list],
-                    [s.trans_matrix for s in self.states_list],
-                    params,normalizers,
+                    [s.pi_0.astype('float32') for s in self.states_list],
+                    [s.trans_matrix.astype('float32') for s in self.states_list],
+                    params.astype('float32'), normalizers.astype('float32'),
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    [np.random.uniform(size=s.T).astype('float32') for s in self.states_list],
                     self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
@@ -190,11 +193,15 @@ class _HMMFastResamplingMixin(_ARMixin):
     @property
     def alphans(self):
         if not hasattr(self,'_alphans'):
-            self._alphans = [np.empty((s.T,self.num_states)) for s in self.states_list]
+            self._alphans = [np.empty((s.T,self.num_states),
+                dtype='float32') for s in self.states_list]
         return self._alphans
 
 class _INBHSMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
+
+    def add_data(self,data,**kwargs):
+        super(_HMMFastResamplingMixin,self).add_data(data.astype('float32'),**kwargs)
 
     def resample_states(self,**kwargs):
         # TODO only use this when the number/size of sequences warrant it
@@ -204,12 +211,12 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
             stats, _, loglikes = resample_arhmm(
-                    [s.hmm_bwd_pi_0 for s in self.states_list],
-                    [s.hmm_bwd_trans_matrix for s in self.states_list],
-                    params,normalizers,
+                    [s.hmm_bwd_pi_0.astype('float32') for s in self.states_list],
+                    [s.hmm_bwd_trans_matrix.astype('float32') for s in self.states_list],
+                    params.astype('float32'), normalizers.astype('float32'),
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    [np.random.uniform(size=s.T).astype('float2') for s in self.states_list],
                     self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
@@ -234,7 +241,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     @property
     def alphans(self):
-        return [np.empty((s.T,sum(s.rs))) for s in self.states_list]
+        return [np.empty((s.T,sum(s.rs)), astype='float32') for s in self.states_list]
 
 
 class FastARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):

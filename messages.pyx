@@ -24,20 +24,20 @@ cdef extern from "messages.h":
             Type *randseq, Type *alphan) nogil
         void initParallel()
 
-cdef dummy[double] ref
+cdef dummy[float] ref
 ref.initParallel()
 
 def resample_arhmm(
         list pi_0s,
         list As,
-        double[:,:,::1] params,
-        double[::1] normalizers,
+        float[:,:,::1] params,
+        float[::1] normalizers,
         list datas,
         list stateseqs,
         list randseqs,
         list alphans):
     cdef int i, j
-    cdef dummy[double] ref
+    cdef dummy[float] ref
 
     cdef int M = params.shape[0]   # number of states
     cdef int K = len(datas)        # number of sequences
@@ -52,39 +52,40 @@ def resample_arhmm(
         temp = stateseqs[i]
         stateseqs_v.push_back(&temp[0])
 
-    cdef vector[double*] randseqs_v
-    cdef double[:] temp2
+    cdef vector[float*] randseqs_v
+    cdef float[:] temp2
     for i in range(K):
         temp2 = randseqs[i]
         randseqs_v.push_back(&temp2[0])
 
-    cdef vector[double*] datas_v
-    cdef double[:,:] temp3
+    cdef vector[float*] datas_v
+    cdef float[:,:] temp3
     for i in range(K):
         temp3 = datas[i]
         datas_v.push_back(&temp3[0,0])
 
-    cdef vector[double*] alphans_v
-    cdef double[:,:] temp4
+    cdef vector[float*] alphans_v
+    cdef float[:,:] temp4
     for i in range(K):
         temp4 = alphans[i]
         alphans_v.push_back(&temp4[0,0])
 
-    cdef vector[double*] As_v
+    cdef vector[float*] As_v
     for i in range(K):
         temp4 = As[i]
         As_v.push_back(&temp4[0,0])
 
-    cdef vector[double*] pi_0s_v
+    cdef vector[float*] pi_0s_v
     for i in range(K):
         temp2 = pi_0s[i]
         pi_0s_v.push_back(&temp2[0])
 
     # NOTE: 2*K for false sharing
-    cdef double[:,:,:,::1] stats = np.zeros((2*K,M,params.shape[1],params.shape[2]))
+    cdef float[:,:,:,::1] stats = \
+            np.zeros((2*K,M,params.shape[1],params.shape[2]),dtype='float32')
     cdef int32_t[:,::1] ns = np.zeros((2*K,M),dtype='int32')
     cdef int32_t[:,:,::1] transcounts = np.zeros((2*K,M,M),dtype='int32')
-    cdef double[::1] likes = np.zeros(K)
+    cdef float[::1] likes = np.zeros(K,dtype='float32')
 
     # ref.initParallel()
     with nogil:

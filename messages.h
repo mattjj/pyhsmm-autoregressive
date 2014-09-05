@@ -2,12 +2,14 @@
 #include <stdint.h> // int32_t
 #include <omp.h> // omp_get_num_threads, omp_get_thread_num
 #include <limits> // infinity
+#include <iostream> // cout, endl
 
 #include "nptypes.h"
 #include "util.h"
 
 using namespace Eigen;
 using namespace nptypes;
+using namespace std;
 
 template <typename Type>
 class dummy
@@ -39,13 +41,13 @@ class dummy
 
         NPMatrix<Type> ealphan(alphan,T-nlags,M);
 
-        Type temp_buf[sz] __attribute__((aligned(32)));
+        Type temp_buf[sz] __attribute__((aligned(16)));
         NPVector<Type> etemp(temp_buf,sz);
-        Type data_buff[sz] __attribute__((aligned(32)));
+        Type data_buff[sz] __attribute__((aligned(16)));
         NPRowVector<Type> data_buf(data_buff,sz);
-        Type in_potential_buf[M] __attribute__((aligned(32)));
+        Type in_potential_buf[M] __attribute__((aligned(16)));
         NPRowVector<Type> ein_potential(in_potential_buf,M);
-        Type likes_buf[M] __attribute__((aligned(32)));
+        Type likes_buf[M] __attribute__((aligned(16)));
         NPRowVector<Type> elikes(likes_buf,M);
         bool good_data[T-nlags];
 
@@ -87,7 +89,7 @@ class dummy
         int next_state = 0;
         for (int t=T-nlags-1; t >= 0; t--) {
             elikes = ein_potential.array() * ealphan.row(t).array();
-            stateseq[t] = util::sample_discrete(M,elikes.data(),randseq[t]);
+            stateseq[t] = util::sample_discrete<Type>(M,elikes.data(),randseq[t]);
             etranscounts(stateseq[t],next_state) += 1;
 
             ein_potential = eA.col(stateseq[t]).transpose();
