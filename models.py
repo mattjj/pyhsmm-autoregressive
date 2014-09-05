@@ -31,6 +31,7 @@ class _ARMixin(object):
         self.init_emission_distn = init_emission_distn
 
     def add_data(self,data,strided=False,**kwargs):
+        data = data.astype('float32')
         strided_data = AR_striding(data,self.nlags) if not strided else data
         super(_ARMixin,self).add_data(data=strided_data,**kwargs)
 
@@ -47,6 +48,7 @@ class _ARMixin(object):
     ### prediction
 
     def predict(self,seed_data,timesteps,with_noise=False):
+        seed_data = seed_data.astype('float32')
         assert seed_data.shape[0] >= self.nlags
 
         full_data = np.vstack((seed_data,np.nan*np.ones((timesteps,self.D))))
@@ -124,13 +126,13 @@ class _HMMFastResamplingMixin(_ARMixin):
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             stats, transcounts, loglikes = resample_arhmm(
-                    [s.pi_0 for s in self.states_list],
-                    [s.trans_matrix for s in self.states_list],
-                    params,normalizers,
+                    [s.pi_0.astype('float32') for s in self.states_list],
+                    [s.trans_matrix.astype('float32') for s in self.states_list],
+                    params.astype('float32'), normalizers.astype('float32'),
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list],
-                    self.alphans)
+                    [np.random.uniform(size=s.T).astype('float32') for s in self.states_list],
+                    [a.astype('float32') for a in self.alphans])
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
                 s._normalizer = loglike
