@@ -132,7 +132,7 @@ class _HMMFastResamplingMixin(_ARMixin):
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
                     [np.random.uniform(size=s.T).astype('float32') for s in self.states_list],
-                    [a.astype('float32') for a in self.alphans])
+                    self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
                 s._normalizer = loglike
