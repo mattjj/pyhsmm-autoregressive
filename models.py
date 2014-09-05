@@ -157,7 +157,7 @@ class _HMMFastResamplingMixin(_ARMixin):
     @property
     def alphans(self):
         if not hasattr(self,'_alphans'):
-            self._alphans = [np.empty((s.T,self.num_states)) for s in self.states_list]
+            self._alphans = [np.empty((s.T,self.num_states), dtype='float32') for s in self.states_list]
         return self._alphans
 
 class _INBHSMMFastResamplingMixin(_ARMixin):
@@ -171,12 +171,12 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
             stats, _, loglikes = resample_arhmm(
-                    [s.hmm_bwd_pi_0 for s in self.states_list],
-                    [s.hmm_bwd_trans_matrix for s in self.states_list],
-                    params,normalizers,
+                    [s.hmm_bwd_pi_0.astype('float32') for s in self.states_list],
+                    [s.hmm_bwd_trans_matrix.astype('float32') for s in self.states_list],
+                    params.astype('float32'), normalizers.astype('float32'),
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
-                    [np.random.uniform(size=s.T) for s in self.states_list],
+                    [np.random.uniform(size=s.T).astype('float2') for s in self.states_list],
                     self.alphans)
             for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
                 s.stateseq = stateseq
@@ -201,7 +201,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     @property
     def alphans(self):
-        return [np.empty((s.T,sum(s.rs))) for s in self.states_list]
+        return [np.empty((s.T,sum(s.rs)), astype='float32') for s in self.states_list]
 
 ###################
 #  model classes  #
