@@ -15,7 +15,7 @@ import autoregressive.distributions as d
 #  generate data  #
 ###################
 
-As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))), # TODO put back 0.99
+As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
         np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2))),
         np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
 
