@@ -6,6 +6,7 @@ plt.ion()
 
 import pyhsmm
 from pyhsmm.util.text import progprint_xrange
+from pyhsmm.util.stats import whiten, cov
 
 import autoregressive.models as m
 import autoregressive.distributions as d
@@ -14,18 +15,18 @@ import autoregressive.distributions as d
 #  generate data  #
 ###################
 
-As = [np.hstack((-np.eye(2),2*np.eye(2))),
+As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))), # TODO put back 0.99
         np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2))),
         np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
 
 truemodel = m.ARHSMM(
         alpha=4.,init_state_concentration=4.,
-        obs_distns=[d.AutoRegression(A=A,sigma=0.1*np.eye(2)) for A in As],
+        obs_distns=[d.AutoRegression(A=A,sigma=np.eye(2)) for A in As],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
             for state in range(len(As))],
         )
 
-data, labels = truemodel.generate(1000)
+data, labels = truemodel.generate(500)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -41,7 +42,7 @@ plt.gcf().suptitle('truth')
 
 Nmax = 20
 affine = True
-model = m.ARHMM(
+model = m.FastARHMM(
         alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
@@ -52,6 +53,7 @@ model = m.ARHMM(
                 K_0=np.eye(4+affine),
                 affine=affine)
             for state in range(Nmax)],
+        dtype='float32',
         )
 
 model.add_data(data)
@@ -68,8 +70,10 @@ model.plot()
 plt.gcf().suptitle('sampled')
 
 plt.figure()
-colors = ['b','r','y','k','g']
+colors = model._get_colors()
+cmap = plt.get_cmap()
 stateseq = model.states_list[0].stateseq
 for i,s in enumerate(np.unique(stateseq)):
-    plt.plot(data[s==stateseq,0],data[s==stateseq,1],colors[i % len(colors)] + 'o')
+    plt.plot(data[model.nlags:][s==stateseq,0],data[model.nlags:][s==stateseq,1],
+            color=cmap(colors[s]),linestyle='',marker='o')
 
