@@ -53,6 +53,7 @@ model = m.FastARHMM(
                 K_0=np.eye(4+affine),
                 affine=affine)
             for state in range(Nmax)],
+        dtype='float32',
         )
 
 model.add_data(data)
