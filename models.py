@@ -59,7 +59,7 @@ class _ARMixin(object):
                 else:
                     row[-self.D:] = o.A[:,:-1].dot(row[:-self.D]) + np.squeeze(o.A[:,-1])
 
-        return full_data
+        return undo_AR_striding(s.data,nlags=self.nlags)
 
     def fill_in(self,data):
         raise NotImplementedError
