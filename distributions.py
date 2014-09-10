@@ -23,19 +23,36 @@ class _ARMixin(object):
     def D(self):
         return self.D_out
 
-    @property
-    def is_stable(self):
-        D, nlags = self.D, self.nlags
-        mat = np.zeros((D*nlags,D*nlags))
-        mat[:-D,D:] = np.eye(D*(nlags-1))
-        mat[-D:,:] = self.A
-        return np.all(np.abs(np.linalg.eigvals(mat)) < 1.)
-
     def rvs(self,lagged_data):
         return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
-    # for low-level code
+    ### some AR analysis
+
+    def eval_transfer_function(self,from_idx,to_idx,freqs):
+        assert 0 <= from_idx < self.D and 0 <= to_idx < self.D
+        D = self.D
+        bigA = self.canonical_matrix
+        I = np.eye(bigA.shape[0])
+        zs = np.exp(1j*np.array(freqs))
+        return np.array(
+                [np.linalg.inv(z*I-bigA)[-D:,-2*D:-D][to_idx,from_idx]
+                    for z in zs])
+
+    @property
+    def is_stable(self):
+        bigA = self.canonical_matrix
+        return np.all(np.abs(np.linalg.eigvals(bigA)) < 1.)
+
+    @property
+    def canonical_matrix(self):
+        D, nlags = self.D, self.nlags
+        mat = np.zeros((D*nlags,D*nlags))
+        mat[:-D,D:] = np.eye(D*(nlags-1))
+        mat[-D:,:] = self.A[:,:D*nlags]
+        return mat
+
+    ### for low-level code
 
     @property
     def _param_matrix(self):
