@@ -40,17 +40,19 @@ plt.gcf().suptitle('truth')
 #  create model  #
 ##################
 
-Nmax = 20
+Nmax = 10
 affine = True
+nlags = 3
 model = m.FastARHMM(
         alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
-            d.AutoRegression(
+            d.ARDAutoRegression(
                 nu_0=3,
                 S_0=np.eye(2),
-                M_0=np.zeros((2,4+affine)),
-                K_0=np.eye(4+affine),
+                M_0=np.zeros((2,2*nlags+affine)),
+                a=10.,b=0.1,blocksizes=[2]*nlags + ([1] if affine else []),
+                niter=10,
                 affine=affine)
             for state in range(Nmax)],
         dtype='float32',

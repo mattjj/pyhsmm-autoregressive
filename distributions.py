@@ -3,7 +3,7 @@ import numpy as np
 from numpy import newaxis as na
 
 from pyhsmm.basic.abstractions import GibbsSampling, MaxLikelihood, Distribution
-from pyhsmm.basic.distributions import Regression
+from pyhsmm.basic.distributions import Regression, ARDRegression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
@@ -11,7 +11,7 @@ from pyhsmm.basic.pybasicbayes.util.general import blockarray
 
 from util import AR_striding, undo_AR_striding
 
-class AutoRegression(Regression):
+class _ARMixin(object):
     @property
     def nlags(self):
         if not self.affine:
@@ -32,7 +32,7 @@ class AutoRegression(Regression):
         return np.all(np.abs(np.linalg.eigvals(mat)) < 1.)
 
     def rvs(self,lagged_data):
-        return super(AutoRegression,self).rvs(
+        return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
     # for low-level code
@@ -47,4 +47,10 @@ class AutoRegression(Regression):
             ])
         normalizer = D/2*np.log(2*np.pi) + np.log(np.diag(np.linalg.cholesky(sigma))).sum()
         return parammat, normalizer
+
+class AutoRegression(_ARMixin,Regression):
+    pass
+
+class ARDAutoRegression(_ARMixin,ARDRegression):
+    pass
 
