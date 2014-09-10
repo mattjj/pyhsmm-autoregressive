@@ -51,8 +51,7 @@ model = m.FastARHMM(
                 nu_0=3,
                 S_0=np.eye(2),
                 M_0=np.zeros((2,2*nlags+affine)),
-                a=10.,b=0.1,blocksizes=[2]*nlags + ([1] if affine else []),
-                niter=10,
+                a=10.,b=0.1,niter=10, # instead of K_0
                 affine=affine)
             for state in range(Nmax)],
         dtype='float32',
