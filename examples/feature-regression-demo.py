@@ -25,7 +25,7 @@ truemodel = m.ARHSMM(
             for state in range(len(As))],
         )
 
-data, labels = truemodel.generate(500)
+data, labels = truemodel.generate(1000)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -42,18 +42,30 @@ plt.gcf().suptitle('truth')
 Nmax = 10
 data_dim = data.shape[1]
 
-# returns a 1D feature vector given the recent data in data_window
+# featurefn takes the most recent process emissions in data_window
+# and returns a 1D feature vector
 # data_window is windowsize x data_dim
-def featurefn(data_window):
-    return data_window.flatten() # linear features gives us regular AR
 
-windowsize = 3
+# linear features gives us regular AR
+def linear_featurefn(data_window):
+    return data_window.flatten()
+
+# or we can add in more features to try regressing on
+def quadratic_featurefn(data_window):
+    flat = data_window.ravel()
+    return np.r_[
+            flat, # all the raw lags
+            np.triu(np.outer(flat,flat)).ravel()] # all 2nd degree monomials
+
+# featurefn = quadratic_featurefn
+featurefn = linear_featurefn
+
+windowsize = 2
 featuresize = featurefn(data[:windowsize]).shape[0]
 affine = True
 
 model = m.FeatureARHMM(
-        windowsize=windowsize,
-        featurefn=featurefn,
+        windowsize=windowsize,featurefn=featurefn, # new!
         alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
@@ -61,7 +73,7 @@ model = m.FeatureARHMM(
                 nu_0=data_dim+3,
                 S_0=np.eye(data_dim),
                 M_0=np.zeros((data_dim,featuresize+affine)),
-                a=10.,b=0.1,niter=10, # instead of K_0
+                a=5.,b=0.1,niter=10, # instead of K_0
                 affine=affine)
             for state in range(Nmax)],
         )
@@ -86,6 +98,12 @@ stateseq = model.states_list[0].stateseq
 for i,s in enumerate(np.unique(stateseq)):
     plt.plot(data[windowsize:][s==stateseq,0],data[windowsize:][s==stateseq,1],
             color=cmap(colors[s]),linestyle='',marker='o')
+
+plt.set_cmap('bone')
+for state in model._get_used_states():
+    plt.matshow(np.abs(model.obs_distns[state].A))
+    plt.colorbar()
+    plt.title('state %d regression matrix' % state)
 
 plt.show()
 
