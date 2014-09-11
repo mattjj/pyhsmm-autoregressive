@@ -71,7 +71,7 @@ class AutoRegression(_ARMixin,Regression):
 class ARDAutoRegression(_ARMixin,ARDRegression):
     def __init__(self,M_0,**kwargs):
         blocksizes = [M_0.shape[0]]*(M_0.shape[1] // M_0.shape[0]) \
-                + ([1] if M_0.shape[1] % M_0.shape[0] else [])
+                + ([1] if M_0.shape[1] % M_0.shape[0] and M_0.shape[0] != 1 else [])
         super(ARDAutoRegression,self).__init__(
                 M_0=M_0,blocksizes=blocksizes,**kwargs)
 
