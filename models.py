@@ -276,18 +276,18 @@ class _FeatureRegressionMixin(object):
         super(_FeatureRegressionMixin,self).__init__(**kwargs)
 
     def add_data(self,data,featureseq=None,**kwargs):
-        assert (featureseq is not None) ^ (None not in (self.featurefn,self.windowsize))
-        assert data.ndim == 2 and data.shape[0] > self.windowsize
-        featureseq = self._get_featureseq(data) if featureseq is None else featureseq
-        super(_FeatureRegressionMixin,self).add_data(
-                data=np.hstack((featureseq,data[self.windowsize:])))
+        if featureseq is None:
+            data, featureseq = self._get_featureseq(data)
+        super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
 
     def _get_featureseq(self,data):
+        assert None not in (self.featurefn, self.windowsize)
+        assert data.ndim == 2 and data.shape[0] > self.windowsize
         featuredim = self.featurefn(data[:self.windowsize]).shape[0]
         out = np.empty((data.shape[0]-self.windowsize,featuredim),dtype=data.dtype)
         for t in xrange(out.shape[0]):
             out[t] = self.featurefn(data[t:t+self.windowsize])
-        return out
+        return data[self.windowsize:], out
 
     ### prediction
 
