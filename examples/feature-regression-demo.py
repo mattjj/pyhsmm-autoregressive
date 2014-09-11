@@ -84,7 +84,7 @@ colors = model._get_colors()
 cmap = plt.get_cmap()
 stateseq = model.states_list[0].stateseq
 for i,s in enumerate(np.unique(stateseq)):
-    plt.plot(data[windowsize:][s==stateseq,0],data[windowisze:][s==stateseq,1],
+    plt.plot(data[windowsize:][s==stateseq,0],data[windowsize:][s==stateseq,1],
             color=cmap(colors[s]),linestyle='',marker='o')
 
 plt.show()
