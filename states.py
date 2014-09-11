@@ -9,6 +9,10 @@ from pyhsmm.internals.hsmm_inb_states import HSMMStatesIntegerNegativeBinomial
 
 from util import AR_striding
 
+################
+#  AR classes  #
+################
+
 class _ARStatesMixin(object):
     @property
     def D(self):

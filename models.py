@@ -266,3 +266,57 @@ class FastARWeakLimitHDPHSMMIntNegBin(
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
+########################
+#  feature regression  #
+########################
+
+class _FeatureRegressionMixin(object):
+    def __init__(self,windowsize=None,featurefn=None,**kwargs):
+        self.windowsize, self.featurefn = windowsize, featurefn
+        super(_FeatureRegressionMixin,self).__init__(**kwargs)
+
+    def add_data(self,data,featureseq=None,**kwargs):
+        assert (featureseq is not None) ^ (None not in (self.featurefn,self.windowsize))
+        assert data.ndim == 2 and data.shape[0] > self.windowsize
+        featureseq = self._get_featureseq(data) if featureseq is None else featureseq
+        super(_FeatureRegressionMixin,self).add_data(
+                data=np.hstack((featureseq,data[self.windowsize:])))
+
+    def _get_featureseq(self,data):
+        featuredim = self.featurefn(data[:self.windowsize]).shape[0]
+        out = np.empty((data.shape[0]-self.windowsize,featuredim),dtype=data.dtype)
+        for t in xrange(out.shape[0]):
+            out[t] = self.featurefn(data[t:t+self.windowsize])
+        return out
+
+    ### prediction
+
+    def predict(self,seed_data,timesteps,with_noise=False):
+        assert None not in (self.featurefn,self.windowsize)
+        raise NotImplementedError
+
+    ### plotting
+
+    def plot_observations(self,colors=None,states_objs=None):
+        if colors is None:
+            colors = self._get_colors()
+        if states_objs is None:
+            states_objs = self.states_list
+
+        cmap = cm.get_cmap()
+
+        for s in states_objs:
+            data = s.data[:,-self.obs_distns[0].D_out:]
+
+            stateseq_norep, durs = rle(s.stateseq)
+            starts = np.concatenate(((0,),durs.cumsum()))
+            for state,start,dur in zip(stateseq_norep,starts,durs):
+                plt.plot(
+                        np.arange(start,start+data[start:start+dur+1].shape[0]),
+                        data[start:start+dur+1],
+                        color=cmap(colors[state]))
+            plt.xlim(0,s.T-1)
+
+class FeatureARHMM(_FeatureRegressionMixin,pyhsmm.models.HMM):
+    pass
+
