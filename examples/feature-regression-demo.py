@@ -69,7 +69,7 @@ model = m.FastFeatureARHMM(
         alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
-            d.ARDRegression( # or just Regression
+            d.ARDAutoRegression( # or just AutoRegression
                 nu_0=data_dim+3,
                 S_0=np.eye(data_dim),
                 M_0=np.zeros((data_dim,featuresize+affine)),
