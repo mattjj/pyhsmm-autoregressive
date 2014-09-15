@@ -145,9 +145,7 @@ class ARWeakLimitHDPHSMMSeparateTrans(_SeparateTransMixin,ARWeakLimitHDPHSMM):
 class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_SeparateTransMixin,ARWeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStatesSeparateTrans
 
-###########################
-#  low-level code mixins  #
-###########################
+### low-level code
 
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -212,8 +210,10 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         super(_HMMFastResamplingMixin,self).add_data(data.astype(self.dtype),**kwargs)
 
     def resample_states(self,**kwargs):
+        # NOTE: kwargs is just to absorb any joblib stuff
         # TODO only use this when the number/size of sequences warrant it
         from messages import resample_arhmm
+        assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
@@ -318,5 +318,71 @@ class _FeatureRegressionMixin(object):
             plt.xlim(0,s.T-1)
 
 class FeatureARHMM(_FeatureRegressionMixin,pyhsmm.models.HMM):
+    pass
+
+class FeatureARWeakLimitStickyHDPHMM(
+        _FeatureRegressionMixin,
+        pyhsmm.models.WeakLimitStickyHDPHMM):
+    pass
+
+### low-level code
+
+class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
+    _obs_stats = None
+    _transcounts = []
+
+    def __init__(self,dtype='float64',**kwargs):
+        self.dtype = dtype
+        super(_FastFeatureRegressionMixin,self).__init__(**kwargs)
+
+    def add_data(self,data,**kwargs):
+        super(_FastFeatureRegressionMixin,self).add_data(data=data.astype(self.dtype),**kwargs)
+
+    def resample_states(self,**kwargs):
+        # NOTE: kwargs is just to absorb any joblib stuff
+        from messages import resample_featureregressionhmm
+        assert self.obs_distns[0].D_out > 1
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            stats, transcounts, loglikes = resample_featureregressionhmm(
+                    self.obs_distns[0].D_out,
+                    [s.pi_0.astype(self.dtype) for s in self.states_list],
+                    [s.trans_matrix.astype(self.dtype) for s in self.states_list],
+                    params.astype(self.dtype), normalizers.astype(self.dtype),
+                    [s.data for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T).astype(self.dtype) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._normalizer = loglike
+
+            self._obs_stats = stats
+            self._transcounts = transcounts
+        else:
+            self._obs_stats = None
+
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for o, statmat in zip(self.obs_distns,self._obs_stats):
+                o.resample(stats=statmat)
+        else:
+            for o in self.obs_distns:
+                o.resample()
+
+    @property
+    def alphans(self):
+        if not hasattr(self,'_alphans'):
+            self._alphans = [np.empty((s.T,self.num_states),
+                dtype=self.dtype) for s in self.states_list]
+        return self._alphans
+
+class FastFeatureARHMM(_FastFeatureRegressionMixin,pyhsmm.models.HMM):
+    pass
+
+class FastFeatureARWeakLimitStickyHDPHMM(
+        _FastFeatureRegressionMixin,
+        pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
 

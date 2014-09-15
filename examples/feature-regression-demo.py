@@ -57,14 +57,14 @@ def quadratic_featurefn(data_window):
             flat, # all the raw lags
             np.triu(np.outer(flat,flat)).ravel()] # all 2nd degree monomials
 
-featurefn = quadratic_featurefn
-# featurefn = linear_featurefn
+# featurefn = quadratic_featurefn
+featurefn = linear_featurefn
 
 windowsize = 2
 featuresize = featurefn(data[:windowsize]).shape[0]
 affine = True
 
-model = m.FeatureARHMM(
+model = m.FastFeatureARHMM(
         windowsize=windowsize,featurefn=featurefn, # new!
         alpha=4.,
         init_state_distn='uniform',
@@ -99,11 +99,11 @@ for i,s in enumerate(np.unique(stateseq)):
     plt.plot(data[windowsize:][s==stateseq,0],data[windowsize:][s==stateseq,1],
             color=cmap(colors[s]),linestyle='',marker='o')
 
-plt.set_cmap('bone')
-for state in model._get_used_states():
-    plt.matshow(np.abs(model.obs_distns[state].A))
-    plt.colorbar()
-    plt.title('state %d regression matrix' % state)
+# plt.set_cmap('bone')
+# for state in model._get_used_states():
+#     plt.matshow(np.abs(model.obs_distns[state].A))
+#     plt.colorbar()
+#     plt.title('state %d regression matrix' % state)
 
 plt.show()
 
