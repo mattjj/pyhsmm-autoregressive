@@ -266,6 +266,10 @@ class FastARWeakLimitHDPHSMMIntNegBin(
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     _states_class = ARHSMMStatesIntegerNegativeBinomialStates
 
+
+class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
+    _states_class = ARHMMStatesEigenSeparateTrans
+
 ########################
 #  feature regression  #
 ########################
