@@ -9,13 +9,17 @@ eigen_include_path = os.path.join(
 pyhsmm_include_path = os.path.join(
         os.path.dirname(pyhsmm.__file__),'internals/')
 
-extra_compile_args = []
+extra_compile_args = ['-w','-DNDEBUG']
 extra_link_args =[]
 
 if '--with-mkl' in sys.argv:
     sys.argv.remove('--with-mkl')
     extra_compile_args.extend(['-m64','-I' + os.environ['MKLROOT'] + '/include','-DEIGEN_USE_MKL_ALL'])
     extra_link_args.extend(('-Wl,--start-group %(MKLROOT)s/lib/intel64/libmkl_intel_lp64.a %(MKLROOT)s/lib/intel64/libmkl_core.a %(MKLROOT)s/lib/intel64/libmkl_sequential.a -Wl,--end-group -lm' % {'MKLROOT':os.environ['MKLROOT']}).split(' '))
+
+if '--with-native' in sys.argv:
+    sys.argv.remove('--with-native')
+    extra_compile_args.append('-march=native')
 
 ext_modules = cythonize('**/*.pyx')
 for e in ext_modules:

@@ -9,11 +9,6 @@ from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
 
 from util import AR_striding, undo_AR_striding
-from autoregressive.states import ARHMMStates, ARHSMMStates, \
-        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo, \
-        ARHSMMStatesIntegerNegativeBinomialStates, \
-        ARHMMStatesEigenSeparateTrans, ARHSMMStatesEigenSeparateTrans, \
-        ARHSMMStatesIntegerNegativeBinomialStatesSeparateTrans
 
 class _ARMixin(object):
     def __init__(self,init_emission_distn=None,**kwargs):
@@ -27,6 +22,31 @@ class _ARMixin(object):
     def add_data(self,data,strided=False,**kwargs):
         strided_data = AR_striding(data,self.nlags) if not strided else data
         super(_ARMixin,self).add_data(data=strided_data,**kwargs)
+
+    def generate(self,T,keep=True):
+        s = self._states_class(model=self,T=T,initialize_from_prior=True)
+        data = self._generate_obs(s)
+        if keep:
+            self.states_list.append(s)
+        else:
+            return data, s.stateseq
+
+    def _generate_obs(self,states_obj):
+        data = np.zeros((states_obj.T+self.nlags,self.D))
+
+        if hasattr(self,'prefix'):
+            data[:self.nlags] = self.prefix
+        else:
+            data[:self.nlags] = self.init_emission_distn\
+                    .rvs().reshape(data[:self.nlags].shape)
+
+        for idx, state in enumerate(states_obj.stateseq):
+            data[idx+self.nlags] = \
+                self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
+
+        states_obj.data = AR_striding(data,self.nlags)
+
+        return data
 
     ### Gibbs
 
@@ -105,45 +125,39 @@ class _ARMixin(object):
 ###################
 
 class ARHMM(_ARMixin,pyhsmm.models.HMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
-    _states_class = ARHSMMStatesEigen
+    pass
 
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
-    _states_class = ARHSMMStatesEigen
+    pass
 
 
 class ARWeakLimitStickyHDPHMM(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 
 class ARWeakLimitHDPHSMMIntNegBin(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
-    _states_class = ARHSMMStatesIntegerNegativeBinomialStates
+    pass
 
 
 class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
-    _states_class = ARHSMMStatesGeo
+    pass
 
 
-class ARHMMSeparateTrans(_SeparateTransMixin,ARHMM):
-    _states_class = ARHMMStatesEigenSeparateTrans
+class ARHMMSeparateTrans(_ARMixin,pyhsmm.models.HMMSeparateTrans):
+    pass
 
-class ARHSMMSeparateTrans(_SeparateTransMixin,ARHSMM):
-    _states_class = ARHSMMStatesEigenSeparateTrans
+class ARWeakLimitHDPHMMSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHMMSeparateTrans):
+    pass
 
-class ARWeakLimitHDPHMMSeparateTrans(_SeparateTransMixin,ARWeakLimitHDPHMM):
-    _states_class = ARHMMStatesEigenSeparateTrans
-
-class ARWeakLimitHDPHSMMSeparateTrans(_SeparateTransMixin,ARWeakLimitHDPHSMM):
-    _states_class = ARHSMMStatesEigenSeparateTrans
-
-class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_SeparateTransMixin,ARWeakLimitHDPHSMMIntNegBin):
-    _states_class = ARHSMMStatesIntegerNegativeBinomialStatesSeparateTrans
+class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
+    pass
 
 ###########################
 #  low-level code mixins  #
@@ -253,16 +267,15 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
 
 class FastARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 class FastARWeakLimitHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitHDPHMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 class FastARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
-    _states_class = ARHMMStatesEigen
+    pass
 
 class FastARWeakLimitHDPHSMMIntNegBin(
         _INBHSMMFastResamplingMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
-    _states_class = ARHSMMStatesIntegerNegativeBinomialStates
-
+    pass
