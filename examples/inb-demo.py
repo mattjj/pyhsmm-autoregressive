@@ -49,7 +49,7 @@ model = m.ARWeakLimitHDPHSMMDelayedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
-        delay=1,
+        delay=2, # minimum duration is 3
         )
 
 model.add_data(data)
