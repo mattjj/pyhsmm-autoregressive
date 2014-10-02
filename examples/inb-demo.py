@@ -45,10 +45,11 @@ obs_distns=[d.AutoRegression(
 dur_distns=[NegativeBinomialIntegerR2Duration(
     r_discrete_distn=np.ones(10.),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
 
-model = m.ARWeakLimitHDPHSMMIntNegBin(
+model = m.ARWeakLimitHDPHSMMDelayedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
+        delay=1,
         )
 
 model.add_data(data)

@@ -159,6 +159,17 @@ class ARWeakLimitHDPHMMSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHMMSepar
 class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
 
+
+class ARWeakLimitHDPHSMMDelayedIntNegBin(
+        _ARMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
+    pass
+
+class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
+        _ARMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
+    pass
+
 ###########################
 #  low-level code mixins  #
 ###########################
