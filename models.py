@@ -264,13 +264,13 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         else:
             self._obs_stats = None
 
-    def resample_obs_distns(self):
-        if self._obs_stats is not None:
-            for o, statmat in zip(self.obs_distns,self._obs_stats):
-                o.resample(stats=statmat)
-        else:
-            for o in self.obs_distns:
-                o.resample()
+    # def resample_obs_distns(self):
+    #     if self._obs_stats is not None:
+    #         for o, statmat in zip(self.obs_distns,self._obs_stats):
+    #             o.resample(stats=statmat)
+    #     else:
+    #         for o in self.obs_distns:
+    #             o.resample()
 
     @property
     def alphans(self):
@@ -292,13 +292,50 @@ class FastARWeakLimitHDPHSMMIntNegBin(
     pass
 
 
+
+class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
+    # NOTE: basically uses s.rs+s.delays instead of just s.rs
+
+    def resample_states(self,**kwargs):
+        from messages import resample_arhmm
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = \
+                    params.repeat(s.rs+s.delays,axis=0), normalizers.repeat(s.rs+s.delays,axis=0)
+            stats, _, loglikes = resample_arhmm(
+                    [s.hmm_pi_0.astype(self.dtype) for s in self.states_list],
+                    [s.hmm_trans_matrix.astype(self.dtype) for s in self.states_list],
+                    params.astype(self.dtype), normalizers.astype(self.dtype),
+                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T).astype(self.dtype) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._map_states()
+                s._normalizer = loglike
+
+            starts, ends = cumsum(s.rs+s.delays,strict=True), cumsum(s.rs+s.delays,strict=False)
+            stats = map(np.array,stats)
+            stats = [sum(stats[start:end]) for start, end in zip(starts,ends)]
+
+            self._obs_stats = stats
+        else:
+            self._obs_stats = None
+
+    @property
+    def alphans(self):
+        return [np.empty((s.T,sum(s.rs+s.delays)), dtype=self.dtype) for s in self.states_list]
+
+
 class FastARWeakLimitHDPHSMMDelayedIntNegBin(
-        _INBHSMMFastResamplingMixin,
+        _FastDelayedMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
     pass
 
 class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
-        _INBHSMMFastResamplingMixin,
+        _FastDelayedMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
     pass
 

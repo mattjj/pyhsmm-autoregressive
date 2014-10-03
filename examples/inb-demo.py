@@ -50,6 +50,7 @@ model = m.FastARWeakLimitHDPHSMMDelayedIntNegBin(
         obs_distns=obs_distns,
         dur_distns=dur_distns,
         delay=2, # minimum duration is 3
+        dtype='float64',
         )
 
 model.add_data(data)
