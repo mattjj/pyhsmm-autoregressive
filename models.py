@@ -234,7 +234,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         super(_INBHSMMFastResamplingMixin,self).__init__(**kwargs)
 
     def add_data(self,data,**kwargs):
-        super(_HMMFastResamplingMixin,self).add_data(data.astype(self.dtype),**kwargs)
+        super(_INBHSMMFastResamplingMixin,self).add_data(data.astype(self.dtype),**kwargs)
 
     def resample_states(self,**kwargs):
         # TODO only use this when the number/size of sequences warrant it
@@ -274,7 +274,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     @property
     def alphans(self):
-        return [np.empty((s.T,sum(s.rs)), astype=self.dtype) for s in self.states_list]
+        return [np.empty((s.T,sum(s.rs)), dtype=self.dtype) for s in self.states_list]
 
 
 class FastARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
