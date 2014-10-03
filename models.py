@@ -244,8 +244,8 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
             stats, _, loglikes = resample_arhmm(
-                    [s.hmm_bwd_pi_0.astype(self.dtype) for s in self.states_list],
-                    [s.hmm_bwd_trans_matrix.astype(self.dtype) for s in self.states_list],
+                    [s.hmm_pi_0.astype(self.dtype) for s in self.states_list],
+                    [s.hmm_trans_matrix.astype(self.dtype) for s in self.states_list],
                     params.astype(self.dtype), normalizers.astype(self.dtype),
                     [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
                     stateseqs,
@@ -290,3 +290,15 @@ class FastARWeakLimitHDPHSMMIntNegBin(
         _INBHSMMFastResamplingMixin,
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
+
+
+class FastARWeakLimitHDPHSMMDelayedIntNegBin(
+        _INBHSMMFastResamplingMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
+    pass
+
+class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
+        _INBHSMMFastResamplingMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
+    pass
+
