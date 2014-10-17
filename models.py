@@ -264,13 +264,15 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         else:
             self._obs_stats = None
 
-    # def resample_obs_distns(self):
-    #     if self._obs_stats is not None:
-    #         for o, statmat in zip(self.obs_distns,self._obs_stats):
-    #             o.resample(stats=statmat)
-    #     else:
-    #         for o in self.obs_distns:
-    #             o.resample()
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for state, (o, statmat) in enumerate(zip(self.obs_distns,self._obs_stats)):
+                # # NOTE: next two lines are for testing correctness
+                # statmat2 = o._get_statistics([s.data[s.stateseq == state] for s in self.states_list])
+                # assert all(np.allclose(a,b) for a,b in zip(statmat,statmat2))
+                o.resample(stats=statmat)
+        else:
+            super(_INBHSMMFastResamplingMixin,self).resample_obs_distns()
 
     @property
     def alphans(self):
