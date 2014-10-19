@@ -343,7 +343,7 @@ class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
 
 
 class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
-    _states_class = ARHMMStatesEigenSeparateTrans
+    pass
 
 ########################
 #  feature regression  #
