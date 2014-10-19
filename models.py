@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 
 import pyhsmm
-from pyhsmm.models import _SeparateTransMixin
+from pyhsmm.models import _SeparateTransMixin, _DelayedMixin
 from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
 
@@ -162,11 +162,13 @@ class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitH
 
 class ARWeakLimitHDPHSMMDelayedIntNegBin(
         _ARMixin,
+        _DelayedMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
     pass
 
 class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         _ARMixin,
+        _DelayedMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
     pass
 
@@ -295,7 +297,7 @@ class FastARWeakLimitHDPHSMMIntNegBin(
 
 
 
-class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
+class _FastDelayedMixin(_Delayedixin,_INBHSMMFastResamplingMixin):
     # NOTE: basically uses s.rs+s.delays instead of just s.rs
 
     def resample_states(self,**kwargs):
