@@ -447,8 +447,7 @@ class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
             for o, statmat in zip(self.obs_distns,self._obs_stats):
                 o.resample(stats=statmat)
         else:
-            for o in self.obs_distns:
-                o.resample()
+            super(_FastFeatureRegressionMixin,self).resample_obs_distns()
 
     @property
     def alphans(self):
