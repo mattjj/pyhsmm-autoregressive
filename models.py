@@ -232,8 +232,7 @@ class _HMMFastResamplingMixin(_ARMixin):
             for o, statmat in zip(self.obs_distns,self._obs_stats):
                 o.resample(stats=statmat)
         else:
-            for o in self.obs_distns:
-                o.resample()
+            super(_HMMFastResamplingMixin,self).resample_obs_distns()
 
     # def resample_trans_distn(self):
     #     self.trans_distn.resample(trans_counts=self._transcounts)
