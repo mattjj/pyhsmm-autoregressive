@@ -264,6 +264,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         else:
             self._obs_stats = None
 
+    # TODO IIRC this is behaving erratically; may be numerical, needs auto-tests
     # def resample_obs_distns(self):
     #     if self._obs_stats is not None:
     #         for o, statmat in zip(self.obs_distns,self._obs_stats):
