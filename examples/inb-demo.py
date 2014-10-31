@@ -4,6 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 plt.ion()
 
+np.random.seed(0)
+
 import pyhsmm
 from pyhsmm.util.text import progprint_xrange
 from pyhsmm.basic.distributions import NegativeBinomialIntegerR2Duration
@@ -26,7 +28,7 @@ truemodel = m.ARHSMM(
             for state in range(len(As))],
         )
 
-data = truemodel.rvs(1000)
+data = truemodel.rvs(100)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -35,7 +37,7 @@ plt.plot(data[:,0],data[:,1],'bx-')
 #  create model  #
 ##################
 
-Nmax = 20
+Nmax = 3
 affine = True
 
 obs_distns=[d.AutoRegression(
@@ -43,13 +45,13 @@ obs_distns=[d.AutoRegression(
     K_0=np.eye(4+affine), affine=affine) for state in range(Nmax)]
 
 dur_distns=[NegativeBinomialIntegerR2Duration(
-    r_discrete_distn=np.ones(10.),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
+    r_discrete_distn=np.ones(4.),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
 
 model = m.FastARWeakLimitHDPHSMMDelayedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
-        delay=2, # minimum duration is 3
+        delay=4,
         dtype='float64',
         )
 
@@ -59,15 +61,74 @@ model.add_data(data)
 #  inference  #
 ###############
 
-for itr in progprint_xrange(100):
+for itr in progprint_xrange(10):
     model.resample_model()
 
-plt.figure()
-model.plot()
+# plt.figure()
+# model.plot()
 
-plt.figure()
-colors = ['b','r','y','k','g']
-stateseq = model.states_list[0].stateseq
-for i,s in enumerate(np.unique(stateseq)):
-    plt.plot(data[s==stateseq,0],data[s==stateseq,1],colors[i % len(colors)] + 'o')
+# plt.figure()
+# colors = ['b','r','y','k','g']
+# stateseq = model.states_list[0].stateseq
+# for i,s in enumerate(np.unique(stateseq)):
+#     plt.plot(data[s==stateseq,0],data[s==stateseq,1],colors[i % len(colors)] + 'o')
 
+##########
+#  blah  #
+##########
+
+plt.close('all')
+
+model._clear_caches()
+model.resample_states()
+ll1 = model.log_likelihood()
+
+model._clear_caches()
+model.resample_states_slow()
+ll2 = model.log_likelihood()
+
+model._clear_caches()
+model.resample_states_new()
+ll3 = model.log_likelihood()
+
+print ll1
+print ll2
+print ll3
+
+s = model.states_list[0]
+
+# A = s.hmm_trans_matrix_switched
+# smallA = s.trans_matrix
+
+# # let's zero out everything except the block diagonal!
+
+
+# from pyhsmm.util.general import cumsum
+
+# def mult(v):
+#     out = np.zeros(A.shape[1])
+#     outs = np.zeros(smallA.shape[0])
+#     delay = s.delays[0]
+#     rs, ps = s.rs, s.ps
+
+#     starts, ends = cumsum(s.rs+s.delays,strict=True), cumsum(s.rs+s.delays,strict=False)
+
+#     for m, (start,end) in enumerate(zip(starts,ends)):
+#         out[start] = 0
+#         out[start+1:start+delay] = v[start:start+delay-1]
+#         out[start+delay:start+delay+rs[m]] = ps[m] * v[start+delay:start+delay+rs[m]]
+#         out[start+delay+1:start+delay+rs[m]] += (1-ps[m])*v[start+delay:start+delay+rs[m]-1]
+#         out[start+delay] += v[start+delay-1]
+
+#         outs[m] = v[start+delay+rs[m]-1]
+
+#     for m, (start,end) in enumerate(zip(starts,ends)):
+#         out[start:start+rs[m]] += outs.dot(smallA[:,m] * (1-s.ps)) * s.bwd_enter_rows[m]
+
+#     return out
+
+# v = np.random.randn(A.shape[0])
+
+# print v.dot(A)
+# print mult(v)
+# print np.allclose(v.dot(A),mult(v))

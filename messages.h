@@ -77,6 +77,8 @@ class dummy
                 norm = ealphan.row(t).sum();
                 ealphan.row(t) /= norm;
                 logtot += log(norm) + cmax;
+
+                // cout << ealphan.row(t) << endl << endl << endl << endl;
             } else {
                 ealphan.row(t) = ein_potential;
             }
@@ -127,18 +129,20 @@ class dummy
     static Type resample_inb_arhsmm(
             int M, int T, int D, int nlags, int delay, bool affine,
             int *rs, Type *ps,
-            // TODO pass in enters
-            Type *pi_0, Type *A,
+            Type *enters, Type *exits,
+            Type *pi_0, Type *A, Type *bigA,
             Type *natparams, Type *normalizers,
             Type *data,
             Type *stats, int32_t *counts, int32_t *transcounts, int32_t *stateseq,
-            Type *randseq,
-            Type *alphan, int alphan_sz)
+            Type *randseq, Type *alphan)
     {
         Map<Matrix<Type,Dynamic,Dynamic,RowMajor>,Aligned,OuterStride<>>
             edata(data,T-nlags,D*(nlags+1),OuterStride<>(D));
 
+        int alphan_sz = delay*M + Map<VectorXi>(rs,M).sum();
+
         NPMatrix<Type> eA(A,M,M);
+        NPMatrix<Type> ebigA(bigA,alphan_sz,alphan_sz);
 
         int sz = D*(nlags+1) + affine;
         NPMatrix<Type> enatparams(natparams,M*sz,sz);
@@ -147,14 +151,20 @@ class dummy
 
         NPMatrix<Type> ealphan(alphan,T-nlags,alphan_sz);
 
+        NPVectorArray<Type> eexits(exits,M);
+        NPRowVector<Type> eenters(enters,alphan_sz);
+
         Type temp_buf[sz] __attribute__((aligned(16)));
         NPVector<Type> etemp(temp_buf,sz);
         Type data_buff[sz] __attribute__((aligned(16)));
         NPRowVector<Type> data_buf(data_buff,sz);
         Type in_potential_buf[alphan_sz] __attribute__((aligned(16)));
         NPRowVector<Type> ein_potential(in_potential_buf,alphan_sz);
-        Type likes_buf[alphan_sz] __attribute__((aligned(16)));
-        NPRowVector<Type> elikes(likes_buf,alphan_sz);
+        Type likes_buf[M] __attribute__((aligned(16)));
+        NPRowVectorArray<Type> elikes(likes_buf,M);
+        Type outs_buf[M] __attribute__((aligned(16)));
+        NPRowVector<Type> eouts(outs_buf,M);
+
         bool good_data[T-nlags];
 
         Type norm, cmax, logtot = 0.;
@@ -181,42 +191,55 @@ class dummy
                 // ealphan.row(t) = ein_potential.array() * (elikes.array() - cmax).exp();
                 cmax = elikes.maxCoeff();
                 for (int m=0, idx=0; m < M; idx+=rs[m]+delay, m++) {
-                    ealphan.block(t,idx,1,rs[m]+delay).noalias()
+                    ealphan.block(t,idx,1,rs[m]+delay)
                         = ein_potential.segment(idx,rs[m]+delay) * exp(elikes(m) - cmax);
-                    idx += rs[m]+delay;
                 }
 
                 norm = ealphan.row(t).sum();
                 ealphan.row(t) /= norm;
                 logtot += log(norm) + cmax;
+
+                cout << ealphan.row(t) << endl << endl; // TODO remove
             } else {
                 ealphan.row(t) = ein_potential;
             }
 
-            // TODO
-            // ein_potential = ealphan.row(t) * eA;
             for (int m=0, idx=0; m < M; idx+=rs[m]+delay, m++) {
                 ein_potential(idx) = 0;
                 ein_potential.segment(idx+1,delay-1) = ealphan.row(t).segment(idx,delay-1);
                 ein_potential.segment(idx+delay,rs[m]) = ps[m]*ealphan.row(t).segment(idx+delay,rs[m]);
-                ein_potential.segment(idx+delay+1,rs[m]-1) += (1-ps[m])*ealphan.row(t).segment(idx+delay,rs[m]-1);
-                ein_potential(idx+delay+1) += ealphan(t,idx+delay);
-                // TODO copy outs
+                ein_potential.segment(idx+delay+1,rs[m]-1)
+                    += (1-ps[m])*ealphan.row(t).segment(idx+delay,rs[m]-1);
+                ein_potential(idx+delay) += ealphan(t,idx+delay-1);
+
+                eouts(m) = ealphan(t,idx+delay+rs[m]-1);
             }
-            // TODO off block diag
+
+            // TODO this part has to change... pick up the last entry in the
+            // delay section
+            for (int m=0, idx=0, idx2=0; m < M; idx+=rs[m]+delay, idx2+=rs[m], m++) {
+                ein_potential.segment(idx,rs[m])
+                    += (eouts * (eA.col(m).array() * eexits).matrix()) * eenters.segment(idx2,rs[m]);
+            }
         }
 
         // backward sampling and stats gathering
         ein_potential.setOnes();
-        int next_state = 0; // NOTE: extra count in etranscounts
-        for (int t=T-nlags-1; t >= 0; t--) {
-            elikes = ein_potential.array() * ealphan.row(t).array();
-            stateseq[t] = util::sample_discrete<Type>(alphan_sz,elikes.data(),randseq[t]);
-            etranscounts(stateseq[t],next_state) += 1;
+        int themap[alphan_sz] __attribute__((aligned(16)));
+        for (int m=0, idx=0; m<M; idx += rs[m]+delay, m++) {
+            for (int j=idx; j < idx+rs[m]+delay; j++) {
+                themap[j] = m;
+            }
+        }
 
-            // TODO fill in this row better
-            ein_potential = eA.col(stateseq[t]).transpose();
-            next_state = stateseq[t];
+        int next_state = 0; // NOTE: extra count in etranscounts
+        int state_unmapped = 0;
+        for (int t=T-nlags-1; t >= 0; next_state = stateseq[t], t--) {
+            elikes = ein_potential.array() * ealphan.row(t).array();
+            state_unmapped = util::sample_discrete<Type>(alphan_sz,elikes.data(),randseq[t]);
+            stateseq[t] = themap[state_unmapped];
+            etranscounts(stateseq[t],next_state) += 1;
+            ein_potential = ebigA.col(state_unmapped).transpose();
 
             if (good_data[t]) {
                 counts[stateseq[t]] += 1;
@@ -227,8 +250,7 @@ class dummy
                 } else {
                     data_buf = edata.row(t);
                 }
-                // estats.block(stateseq[t]*sz,0,sz,sz).noalias()
-                //     += data_buf.transpose() * data_buf;
+                // estats.block(stateseq[t]*sz,0,sz,sz).noalias() += data_buf.transpose() * data_buf;
                 estats.block(stateseq[t]*sz,0,sz,sz)
                     .template selfadjointView<Lower>().rankUpdate(data_buf.transpose(),1.);
             }
@@ -246,8 +268,8 @@ class dummy
         return logtot;
     }
     // TODO later:
-    // - save memory by mapping states and only computing the statistics we need
-    // - avoid passing in full trans matrix
+    // - avoid passing in full trans matrix ebigA
+    // - exits is just 1-ps at the moment, should be more general
     // - save memory by computing HSMM messages (?)
 
 };

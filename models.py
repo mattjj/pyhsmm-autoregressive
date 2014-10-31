@@ -185,6 +185,9 @@ class _HMMFastResamplingMixin(_ARMixin):
     def add_data(self,data,**kwargs):
         super(_HMMFastResamplingMixin,self).add_data(data.astype(self.dtype),**kwargs)
 
+    def resample_states_slow(self,**kwargs):
+        super(_HMMFastResamplingMixin,self).resample_states(**kwargs)
+
     def resample_states(self,**kwargs):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
@@ -216,6 +219,8 @@ class _HMMFastResamplingMixin(_ARMixin):
             for o in self.obs_distns:
                 o.resample()
 
+    # TODO transcounts being lumped together in low-level code, needs separate
+    # trans treatment. and negbin / hsmm treatment for that class.
     # def resample_trans_distn(self):
     #     self.trans_distn.resample(trans_counts=self._transcounts)
 
@@ -235,6 +240,9 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 
     def add_data(self,data,**kwargs):
         super(_INBHSMMFastResamplingMixin,self).add_data(data.astype(self.dtype),**kwargs)
+
+    def resample_states_slow(self,**kwargs):
+        super(_INBHSMMFastResamplingMixin,self).resample_states(**kwargs)
 
     def resample_states(self,**kwargs):
         # TODO only use this when the number/size of sequences warrant it
@@ -259,6 +267,33 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
             starts, ends = cumsum(s.rs,strict=True), cumsum(s.rs,strict=False)
             stats = map(np.array,stats)
             stats = [sum(stats[start:end]) for start, end in zip(starts,ends)]
+
+            self._obs_stats = stats
+        else:
+            self._obs_stats = None
+
+    def resample_states_new(self,**kwargs):
+        from messages import resample_inb_arhsmm
+        if len(self.states_list) > 0:
+            assert len(np.unique(np.concatenate([s.delays for s in self.states_list]))) == 1
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            stats, _, loglikes = resample_inb_arhsmm(
+                    s.delays[0],
+                    [s.hmm_pi_0.astype(self.dtype) for s in self.states_list],
+                    [s.trans_matrix.astype(self.dtype) for s in self.states_list],
+                    [s.hmm_trans_matrix_switched.astype(self.dtype) for s in self.states_list],
+                    s.rs.astype('int32'), s.ps.astype(self.dtype),
+                    np.concatenate(s.bwd_enter_rows).astype(self.dtype), 1-s.ps.astype(self.dtype),
+                    params.astype(self.dtype), normalizers.astype(self.dtype),
+                    [undo_AR_striding(s.data,self.nlags) for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T).astype(self.dtype) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                assert not np.isnan(loglike)
+                s.stateseq = stateseq
+                s._normalizer = loglike
 
             self._obs_stats = stats
         else:
