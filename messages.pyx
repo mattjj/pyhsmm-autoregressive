@@ -25,7 +25,7 @@ cdef extern from "messages.h":
         Type resample_inb_arhsmm(
             int M, int T, int D, int nlags, int delay, bool affine,
             int *rs, Type *ps,
-            Type *enters, Type *exits,
+            Type *enters,
             Type *pi_0, Type *A, Type *bigA,
             Type *natparams, Type *normalizers,
             Type *data,
@@ -124,7 +124,7 @@ def resample_inb_arhsmm(
         list As,
         list bigAs,
         int[::1] rs, floating[::1] ps,
-        floating[::1] enters, floating[::1] exits,
+        floating[::1] enters,
         floating[:,:,::1] params, floating[::1] normalizers,
         list datas,
         list stateseqs,
@@ -199,7 +199,7 @@ def resample_inb_arhsmm(
                 likes[i] = ref.resample_inb_arhsmm(
                         M,Ts[i],D,nlags,delay,affine,
                         &rs[0],&ps[0],
-                        &enters[0],&exits[0],
+                        &enters[0],
                         pi_0s_v[i],As_v[i],bigAs_v[i],
                         &params[0,0,0],&normalizers[0],
                         datas_v[i],

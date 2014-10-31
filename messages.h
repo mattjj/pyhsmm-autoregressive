@@ -129,7 +129,7 @@ class dummy
     static Type resample_inb_arhsmm(
             int M, int T, int D, int nlags, int delay, bool affine,
             int *rs, Type *ps,
-            Type *enters, Type *exits,
+            Type *enters,
             Type *pi_0, Type *A, Type *bigA,
             Type *natparams, Type *normalizers,
             Type *data,
@@ -151,8 +151,7 @@ class dummy
 
         NPMatrix<Type> ealphan(alphan,T-nlags,alphan_sz);
 
-        NPVectorArray<Type> eexits(exits,M);
-        NPRowVector<Type> eenters(enters,alphan_sz);
+        NPRowVector<Type> eenters(enters,alphan_sz - delay*M);
 
         Type temp_buf[sz] __attribute__((aligned(16)));
         NPVector<Type> etemp(temp_buf,sz);
@@ -199,28 +198,33 @@ class dummy
                 ealphan.row(t) /= norm;
                 logtot += log(norm) + cmax;
 
-                cout << ealphan.row(t) << endl << endl; // TODO remove
+                // cout << ealphan.row(t) << endl << endl;
             } else {
                 ealphan.row(t) = ein_potential;
             }
 
-            for (int m=0, idx=0; m < M; idx+=rs[m]+delay, m++) {
+            for (int m=0, idx=0, idx2=0; m < M; idx+=rs[m]+delay, idx2+=rs[m], m++) {
+                // 1st block
                 ein_potential(idx) = 0;
                 ein_potential.segment(idx+1,delay-1) = ealphan.row(t).segment(idx,delay-1);
+
+                // 2nd block
                 ein_potential.segment(idx+delay,rs[m]) = ps[m]*ealphan.row(t).segment(idx+delay,rs[m]);
-                ein_potential.segment(idx+delay+1,rs[m]-1)
-                    += (1-ps[m])*ealphan.row(t).segment(idx+delay,rs[m]-1);
-                ein_potential(idx+delay) += ealphan(t,idx+delay-1);
+                ein_potential.segment(idx+delay+1,rs[m]-1) += (1-ps[m])*ealphan.row(t).segment(idx+delay,rs[m]-1);
+
+                // enters
+                ein_potential.segment(idx+delay,rs[m]) += eenters.segment(idx2,rs[m]) * ealphan(t,idx+delay-1);
 
                 eouts(m) = ealphan(t,idx+delay+rs[m]-1);
             }
 
-            // TODO this part has to change... pick up the last entry in the
-            // delay section
-            for (int m=0, idx=0, idx2=0; m < M; idx+=rs[m]+delay, idx2+=rs[m], m++) {
-                ein_potential.segment(idx,rs[m])
-                    += (eouts * (eA.col(m).array() * eexits).matrix()) * eenters.segment(idx2,rs[m]);
+            for (int m=0, idx=0; m < M; idx+=rs[m]+delay, m++) {
+                ein_potential(idx) = eouts * eA.col(m);
             }
+
+            // cout << ein_potential << endl << endl;
+            // ein_potential = ealphan.row(t) * ebigA;
+            // cout << ein_potential << endl << endl << endl << endl;
         }
 
         // backward sampling and stats gathering
@@ -235,8 +239,8 @@ class dummy
         int next_state = 0; // NOTE: extra count in etranscounts
         int state_unmapped = 0;
         for (int t=T-nlags-1; t >= 0; next_state = stateseq[t], t--) {
-            elikes = ein_potential.array() * ealphan.row(t).array();
-            state_unmapped = util::sample_discrete<Type>(alphan_sz,elikes.data(),randseq[t]);
+            ein_potential = (ein_potential.array() * ealphan.row(t).array()).matrix();
+            state_unmapped = util::sample_discrete<Type>(alphan_sz,ein_potential.data(),randseq[t]);
             stateseq[t] = themap[state_unmapped];
             etranscounts(stateseq[t],next_state) += 1;
             ein_potential = ebigA.col(state_unmapped).transpose();
