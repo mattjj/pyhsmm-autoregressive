@@ -11,6 +11,8 @@ from pyhsmm.basic.distributions import NegativeBinomialIntegerR2Duration
 import autoregressive.models as m
 import autoregressive.distributions as d
 
+np.random.seed(1)
+
 ###################
 #  generate data  #
 ###################

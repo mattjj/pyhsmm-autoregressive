@@ -10,6 +10,9 @@ from pyhsmm.basic.distributions import Gaussian
 
 from util import AR_striding, undo_AR_striding
 
+# TODO reduce code repetition with Delayed duration sampling, had problems with
+# mixin style though
+
 class _ARMixin(object):
     def __init__(self,init_emission_distn=None,**kwargs):
         super(_ARMixin,self).__init__(**kwargs)
@@ -52,7 +55,7 @@ class _ARMixin(object):
 
     def resample_parameters(self):
         super(_ARMixin,self).resample_parameters()
-        self.resample_init_emission_distn()
+        # self.resample_init_emission_distn()
 
     def resample_init_emission_distn(self):
         self.init_emission_distn.resample(
@@ -163,16 +166,32 @@ class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitH
 class ARWeakLimitHDPHSMMDelayedIntNegBin(
         _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
-    pass
+    def resample_dur_distns(self):
+        for state, distn in enumerate(self.dur_distns):
+            distn.resample_with_truncations(
+            data=
+            [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
+                - s.delays[state] for s in self.states_list],
+            truncated_data=
+            [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
+                - s.delays[state] for s in self.states_list])
+        self._clear_caches()
 
 class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
-    pass
+    def resample_dur_distns(self):
+        for state, distn in enumerate(self.dur_distns):
+            distn.resample_with_truncations(
+            data=
+            [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
+                - s.delays[state] for s in self.states_list],
+            truncated_data=
+            [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
+                - s.delays[state] for s in self.states_list])
+        self._clear_caches()
 
-###########################
-#  low-level code mixins  #
-###########################
+### low-level code
 
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -216,8 +235,7 @@ class _HMMFastResamplingMixin(_ARMixin):
             for o, statmat in zip(self.obs_distns,self._obs_stats):
                 o.resample(stats=statmat)
         else:
-            for o in self.obs_distns:
-                o.resample()
+            super(_HMMFastResamplingMixin,self).resample_obs_distns()
 
     # TODO transcounts being lumped together in low-level code, needs separate
     # trans treatment. and negbin / hsmm treatment for that class.
@@ -245,7 +263,10 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         super(_INBHSMMFastResamplingMixin,self).resample_states(**kwargs)
 
     def resample_states(self,**kwargs):
+        # NOTE: kwargs is just to absorb any joblib stuff
+        # TODO only use this when the number/size of sequences warrant it
         from messages import resample_arhmm
+        assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
@@ -271,14 +292,15 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         else:
             self._obs_stats = None
 
-    # TODO IIRC this is behaving erratically; may be numerical, needs auto-tests
-    # def resample_obs_distns(self):
-    #     if self._obs_stats is not None:
-    #         for o, statmat in zip(self.obs_distns,self._obs_stats):
-    #             o.resample(stats=statmat)
-    #     else:
-    #         for o in self.obs_distns:
-    #             o.resample()
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for state, (o, statmat) in enumerate(zip(self.obs_distns,self._obs_stats)):
+                # # NOTE: next two lines are for testing correctness
+                # statmat2 = o._get_statistics([s.data[s.stateseq == state] for s in self.states_list])
+                # assert all(np.allclose(a,b) for a,b in zip(statmat,statmat2))
+                o.resample(stats=statmat)
+        else:
+            super(_INBHSMMFastResamplingMixin,self).resample_obs_distns()
 
     @property
     def alphans(self):
@@ -364,6 +386,17 @@ class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
     def alphans(self):
         return [np.empty((s.T,sum(s.rs+s.delays)), dtype=self.dtype) for s in self.states_list]
 
+    def resample_dur_distns(self):
+        for state, distn in enumerate(self.dur_distns):
+            distn.resample_with_truncations(
+            data=
+            [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
+                - s.delays[state] for s in self.states_list],
+            truncated_data=
+            [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
+                - s.delays[state] for s in self.states_list])
+        self._clear_caches()
+
 
 class FastARWeakLimitHDPHSMMDelayedIntNegBin(
         _FastDelayedMixin,
@@ -373,5 +406,129 @@ class FastARWeakLimitHDPHSMMDelayedIntNegBin(
 class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         _FastDelayedMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
+    pass
+
+
+class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
+    pass
+
+########################
+#  feature regression  #
+########################
+
+class _FeatureRegressionMixin(object):
+    def __init__(self,windowsize=None,featurefn=None,**kwargs):
+        self.windowsize, self.featurefn = windowsize, featurefn
+        super(_FeatureRegressionMixin,self).__init__(**kwargs)
+
+    def add_data(self,data,featureseq=None,**kwargs):
+        if featureseq is None:
+            data, featureseq = self._get_featureseq(data)
+        super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
+
+    def _get_featureseq(self,data):
+        assert None not in (self.featurefn, self.windowsize)
+        assert data.ndim == 2 and data.shape[0] > self.windowsize
+        featuredim = self.featurefn(data[:self.windowsize]).shape[0]
+        out = np.empty((data.shape[0]-self.windowsize,featuredim),dtype=data.dtype)
+        for t in xrange(out.shape[0]):
+            out[t] = self.featurefn(data[t:t+self.windowsize])
+        return data[self.windowsize:], out
+
+    ### prediction
+
+    def predict(self,seed_data,timesteps,with_noise=False):
+        assert None not in (self.featurefn,self.windowsize)
+        raise NotImplementedError
+
+    ### plotting
+
+    def plot_observations(self,colors=None,states_objs=None):
+        if colors is None:
+            colors = self._get_colors()
+        if states_objs is None:
+            states_objs = self.states_list
+
+        cmap = cm.get_cmap()
+
+        for s in states_objs:
+            data = s.data[:,-self.obs_distns[0].D_out:]
+
+            stateseq_norep, durs = rle(s.stateseq)
+            starts = np.concatenate(((0,),durs.cumsum()))
+            for state,start,dur in zip(stateseq_norep,starts,durs):
+                plt.plot(
+                        np.arange(start,start+data[start:start+dur+1].shape[0]),
+                        data[start:start+dur+1],
+                        color=cmap(colors[state]))
+            plt.xlim(0,s.T-1)
+
+class FeatureARHMM(_FeatureRegressionMixin,pyhsmm.models.HMM):
+    pass
+
+class FeatureARWeakLimitStickyHDPHMM(
+        _FeatureRegressionMixin,
+        pyhsmm.models.WeakLimitStickyHDPHMM):
+    pass
+
+### low-level code
+
+class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
+    _obs_stats = None
+    _transcounts = []
+
+    def __init__(self,dtype='float64',**kwargs):
+        self.dtype = dtype
+        super(_FastFeatureRegressionMixin,self).__init__(**kwargs)
+
+    def add_data(self,data,**kwargs):
+        super(_FastFeatureRegressionMixin,self).add_data(data=data.astype(self.dtype),**kwargs)
+
+    def resample_states(self,**kwargs):
+        # NOTE: kwargs is just to absorb any joblib stuff
+        from messages import resample_featureregressionhmm
+        assert self.obs_distns[0].D_out > 1
+        if len(self.states_list) > 0:
+            stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
+            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            stats, transcounts, loglikes = resample_featureregressionhmm(
+                    self.obs_distns[0].D_out,
+                    [s.pi_0.astype(self.dtype) for s in self.states_list],
+                    [s.trans_matrix.astype(self.dtype) for s in self.states_list],
+                    params.astype(self.dtype), normalizers.astype(self.dtype),
+                    [s.data for s in self.states_list],
+                    stateseqs,
+                    [np.random.uniform(size=s.T).astype(self.dtype) for s in self.states_list],
+                    self.alphans)
+            for s, stateseq, loglike in zip(self.states_list,stateseqs,loglikes):
+                s.stateseq = stateseq
+                s._normalizer = loglike
+
+            self._obs_stats = stats
+            self._transcounts = transcounts
+        else:
+            self._obs_stats = None
+
+    def resample_obs_distns(self):
+        if self._obs_stats is not None:
+            for o, statmat in zip(self.obs_distns,self._obs_stats):
+                o.resample(stats=statmat)
+        else:
+            for o in self.obs_distns:
+                o.resample()
+
+    @property
+    def alphans(self):
+        if not hasattr(self,'_alphans'):
+            self._alphans = [np.empty((s.T,self.num_states),
+                dtype=self.dtype) for s in self.states_list]
+        return self._alphans
+
+class FastFeatureARHMM(_FastFeatureRegressionMixin,pyhsmm.models.HMM):
+    pass
+
+class FastFeatureARWeakLimitStickyHDPHMM(
+        _FastFeatureRegressionMixin,
+        pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
 
