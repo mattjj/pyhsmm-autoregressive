@@ -37,7 +37,7 @@ plt.plot(data[:,0],data[:,1],'bx-')
 #  create model  #
 ##################
 
-Nmax = 5
+Nmax = 2
 affine = True
 
 obs_distns=[d.AutoRegression(
@@ -51,7 +51,7 @@ model = m.FastARWeakLimitHDPHSMMDelayedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
-        delay=2,
+        delay=1,
         dtype='float64',
         )
 

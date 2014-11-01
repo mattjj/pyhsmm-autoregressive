@@ -206,6 +206,7 @@ class dummy
             for (int m=0, idx=0, idx2=0; m < M; idx+=rs[m]+delay, idx2+=rs[m], m++) {
                 // 1st block
                 ein_potential(idx) = 0;
+                // NOTE: assumes delay > 0
                 ein_potential.segment(idx+1,delay-1) = ealphan.row(t).segment(idx,delay-1);
 
                 // 2nd block
@@ -222,9 +223,9 @@ class dummy
                 ein_potential(idx) = eouts * eA.col(m);
             }
 
-            // cout << ein_potential << endl << endl;
-            // ein_potential = ealphan.row(t) * ebigA;
-            // cout << ein_potential << endl << endl << endl << endl;
+            cout << ein_potential << endl << endl;
+            ein_potential = ealphan.row(t) * ebigA;
+            cout << ein_potential << endl << endl << endl << endl;
         }
 
         // backward sampling and stats gathering
