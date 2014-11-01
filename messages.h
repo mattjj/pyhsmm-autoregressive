@@ -223,9 +223,9 @@ class dummy
                 ein_potential(idx) = eouts * eA.col(m);
             }
 
-            cout << ein_potential << endl << endl;
-            ein_potential = ealphan.row(t) * ebigA;
-            cout << ein_potential << endl << endl << endl << endl;
+            /* cout << ein_potential << endl << endl; */
+            /* ein_potential = ealphan.row(t) * ebigA; */
+            /* cout << ein_potential << endl << endl << endl << endl; */
         }
 
         // backward sampling and stats gathering
