@@ -37,7 +37,7 @@ plt.plot(data[:,0],data[:,1],'bx-')
 #  create model  #
 ##################
 
-Nmax = 2
+Nmax = 3
 affine = True
 
 obs_distns=[d.AutoRegression(
@@ -45,13 +45,13 @@ obs_distns=[d.AutoRegression(
     K_0=np.eye(4+affine), affine=affine) for state in range(Nmax)]
 
 dur_distns=[NegativeBinomialIntegerR2Duration(
-    r_discrete_distn=np.ones(2.),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
+    r_discrete_distn=np.r_[0,0,1],alpha_0=1.,beta_0=1.) for state in range(Nmax)]
 
 model = m.FastARWeakLimitHDPHSMMDelayedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
-        delay=1,
+        delay=3,
         dtype='float64',
         )
 
@@ -81,14 +81,17 @@ plt.close('all')
 
 s = model.states_list[0]
 
+# new fast code
 s.clear_caches()
 model.resample_states()
 ll1 = s._normalizer
 
+# very generic code
 s.clear_caches()
 model.resample_states_slow()
 ll2 = s._normalizer
 
+# old fast code
 s.clear_caches()
 model.resample_states_old()
 ll3 = model.log_likelihood()
@@ -97,6 +100,12 @@ print ll1
 print ll2
 print ll3
 
+# so what are the todo items?
+# TODO add b-on-the-top to the low-level code to accomodate (A2,b2,c2) in
+# notebook (enters should NOT be trivialized, to support the delay=0 case)
+# TODO write a new dense trans matrix construction to create that matrix
+# TODO run the same test!
+# TODO negbin truncated resampling
 
 # A = s.hmm_trans_matrix_switched
 # smallA = s.trans_matrix
