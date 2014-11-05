@@ -308,6 +308,7 @@ class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
         from messages import resample_inb_arhsmm
         if len(self.states_list) > 0:
             assert len(np.unique(np.concatenate([s.delays for s in self.states_list]))) == 1
+            assert s.delays[0] != 0 # TODO just call the other code instead in this case?
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
             stats, _, loglikes = resample_inb_arhsmm(

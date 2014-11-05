@@ -219,6 +219,7 @@ class dummy
                 eouts(m) = ealphan(t,idx+delay+rs[m]-1);
             }
 
+            // across-block terms from exits
             for (int m=0, idx=0; m < M; idx+=rs[m]+delay, m++) {
                 ein_potential(idx) = eouts * eA.col(m);
             }

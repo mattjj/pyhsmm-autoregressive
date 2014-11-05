@@ -101,11 +101,12 @@ print ll2
 print ll3
 
 # so what are the todo items?
-# TODO add b-on-the-top to the low-level code to accomodate (A2,b2,c2) in
-# notebook (enters should NOT be trivialized, to support the delay=0 case)
-# TODO write a new dense trans matrix construction to create that matrix
+# TODO write a class that does truncation. meaning it (1) constructs the dense
+# trans matrix differently and (2) calls the low-level code differently (or
+# rather just returns enters differently.
 # TODO run the same test!
 # TODO negbin truncated resampling
+# TODO make delay=0 work by calling other code
 
 # A = s.hmm_trans_matrix_switched
 # smallA = s.trans_matrix
