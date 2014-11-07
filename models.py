@@ -168,11 +168,11 @@ class ARWeakLimitHDPHSMMDelayedIntNegBin(
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
     def resample_dur_distns(self):
         for state, distn in enumerate(self.dur_distns):
-            distn.resample_with_truncations(
+            distn.resample_with_censoring_and_truncation(
             data=
             [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
                 - s.delays[state] for s in self.states_list],
-            truncated_data=
+            censored_data=
             [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
                 - s.delays[state] for s in self.states_list])
         self._clear_caches()
@@ -182,11 +182,11 @@ class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
     def resample_dur_distns(self):
         for state, distn in enumerate(self.dur_distns):
-            distn.resample_with_truncations(
+            distn.resample_with_censoring_and_truncation(
             data=
             [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
                 - s.delays[state] for s in self.states_list],
-            truncated_data=
+            censored_data=
             [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
                 - s.delays[state] for s in self.states_list])
         self._clear_caches()
@@ -389,11 +389,11 @@ class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
 
     def resample_dur_distns(self):
         for state, distn in enumerate(self.dur_distns):
-            distn.resample_with_truncations(
+            distn.resample_with_censoring_and_truncation(
             data=
             [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
                 - s.delays[state] for s in self.states_list],
-            truncated_data=
+            censored_data=
             [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
                 - s.delays[state] for s in self.states_list])
         self._clear_caches()
