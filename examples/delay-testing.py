@@ -47,7 +47,7 @@ obs_distns=[d.AutoRegression(
 dur_distns=[NegativeBinomialIntegerR2Duration(
     r_discrete_distn=np.r_[0,0,1],alpha_0=1.,beta_0=1.) for state in range(Nmax)]
 
-model = m.FastARWeakLimitHDPHSMMDelayedIntNegBin(
+model = m.FastARWeakLimitHDPHSMMTruncatedIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
         obs_distns=obs_distns,
         dur_distns=dur_distns,
@@ -99,14 +99,6 @@ ll3 = model.log_likelihood()
 print ll1
 print ll2
 print ll3
-
-# so what are the todo items?
-# TODO write a class that does truncation. meaning it (1) constructs the dense
-# trans matrix differently and (2) calls the low-level code differently (or
-# rather just returns enters differently.
-# TODO run the same test!
-# TODO negbin truncated resampling
-# TODO make delay=0 work by calling other code
 
 # A = s.hmm_trans_matrix_switched
 # smallA = s.trans_matrix

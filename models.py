@@ -376,3 +376,14 @@ class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
     pass
 
+
+class FastARWeakLimitHDPHSMMTruncatedIntNegBin(
+        _FastDelayedMixin,
+        pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBin):
+    pass
+
+class FastARWeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans(
+        _FastDelayedMixin,
+        pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans):
+    pass
+
