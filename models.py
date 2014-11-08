@@ -323,7 +323,7 @@ class FastARWeakLimitHDPHSMMIntNegBin(
 
 
 
-class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
+class _FastINBHSMMMixin(_INBHSMMFastResamplingMixin):
     # NOTE: basically uses s.rs+s.delays instead of just s.rs
 
     def resample_states(self,**kwargs):
@@ -387,6 +387,23 @@ class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
     def alphans(self):
         return [np.empty((s.T,sum(s.rs+s.delays)), dtype=self.dtype) for s in self.states_list]
 
+class FastARWeakLimitHDPHSMMDelayedIntNegBin(
+        _FastINBHSMMMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
+    def resample_dur_distns(self):
+        for state, distn in enumerate(self.dur_distns):
+            distn.resample_with_censoring_and_truncation(
+            data=
+            [s.durations_censored[s.untrunc_slice][s.stateseq_norep[s.untrunc_slice] == state]
+                - s.delays[state] for s in self.states_list],
+            censored_data=
+            [s.durations_censored[s.trunc_slice][s.stateseq_norep[s.trunc_slice] == state]
+                - s.delays[state] for s in self.states_list])
+        self._clear_caches()
+
+class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
+        _FastINBHSMMMixin,
+        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
     def resample_dur_distns(self):
         for state, distn in enumerate(self.dur_distns):
             distn.resample_with_censoring_and_truncation(
@@ -399,24 +416,13 @@ class _FastDelayedMixin(_INBHSMMFastResamplingMixin):
         self._clear_caches()
 
 
-class FastARWeakLimitHDPHSMMDelayedIntNegBin(
-        _FastDelayedMixin,
-        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBin):
-    pass
-
-class FastARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
-        _FastDelayedMixin,
-        pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
-    pass
-
-
 class FastARWeakLimitHDPHSMMTruncatedIntNegBin(
-        _FastDelayedMixin,
+        _FastINBHSMMMixin,
         pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBin):
     pass
 
 class FastARWeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans(
-        _FastDelayedMixin,
+        _FastINBHSMMMixin,
         pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans):
     pass
 
