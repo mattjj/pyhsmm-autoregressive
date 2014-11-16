@@ -427,7 +427,7 @@ class FastARWeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans(
     pass
 
 class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
-    pass
+    _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
 
 ########################
 #  feature regression  #
