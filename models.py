@@ -31,8 +31,7 @@ class _ARMixin(object):
         data = self._generate_obs(s)
         if keep:
             self.states_list.append(s)
-        else:
-            return data, s.stateseq
+        return data, s.stateseq
 
     def _generate_obs(self,states_obj):
         data = np.zeros((states_obj.T+self.nlags,self.D))
