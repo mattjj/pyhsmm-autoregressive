@@ -320,6 +320,10 @@ class FastARWeakLimitHDPHSMMIntNegBin(
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
 
+class FastARWeakLimitHDPHSMMIntNegBinSeparateTrans(
+        _INBHSMMFastResamplingMixin,
+        pyhsmm.models.WeakLimitHDPHSMMIntNegBinSeparateTrans):
+    pass
 
 
 class _FastINBHSMMMixin(_INBHSMMFastResamplingMixin):
