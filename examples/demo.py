@@ -43,10 +43,8 @@ plt.gcf().suptitle('truth')
 Nmax = 10
 affine = True
 nlags = 3
-model = m.FastARWeakLimitStickyHDPHMM(
-        alpha_a_0=1.,alpha_b_0=1./10,
-        gamma_a_0=1.,gamma_b_0=1./10,
-        kappa=1000,
+model = m.ARHMM(
+        alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
             d.ARDAutoRegression(
@@ -56,7 +54,6 @@ model = m.FastARWeakLimitStickyHDPHMM(
                 a=10.,b=0.1,niter=10, # instead of K_0
                 affine=affine)
             for state in range(Nmax)],
-        dtype='float32',
         )
 
 model.add_data(data)

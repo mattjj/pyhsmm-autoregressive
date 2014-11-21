@@ -9,7 +9,7 @@ from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
 
 from pyhsmm.basic.pybasicbayes.util.general import blockarray
 
-from util import AR_striding, undo_AR_striding
+from util import AR_striding, undo_AR_striding, canonical_matrix, is_stable
 
 class _ARMixin(object):
     @property
@@ -27,32 +27,9 @@ class _ARMixin(object):
         return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
-    ### some AR analysis
-
-    def eval_transfer_function(self,from_idx,to_idx,freqs):
-        assert 0 <= from_idx < self.D and 0 <= to_idx < self.D
-        D = self.D
-        bigA = self.canonical_matrix
-        I = np.eye(bigA.shape[0])
-        zs = np.exp(1j*np.array(freqs))
-        return np.array(
-                [np.linalg.inv(z*I-bigA)[-D:,-2*D:-D][to_idx,from_idx]
-                    for z in zs])
-
-    @property
-    def is_stable(self):
-        bigA = self.canonical_matrix
-        return np.all(np.abs(np.linalg.eigvals(bigA)) < 1.)
-
-    @property
-    def canonical_matrix(self):
-        D, nlags = self.D, self.nlags
-        mat = np.zeros((D*nlags,D*nlags))
-        mat[:-D,D:] = np.eye(D*(nlags-1))
-        mat[-D:,:] = self.A[:,:D*nlags]
-        return mat
-
     ### for low-level code
+
+    # TODO move this to model mixins
 
     @property
     def _param_matrix(self):
