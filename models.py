@@ -60,6 +60,9 @@ class _ARMixin(object):
         self.init_emission_distn.resample(
                 [s.data[:self.nlags].ravel() for s in self.states_list])
 
+    def _get_joblib_pair(self,s):
+        return (undo_AR_striding(s.data,self.nlags),s._kwargs)
+
     ### prediction
 
     def predict(self,seed_data,timesteps,with_noise=False):
@@ -551,4 +554,15 @@ class FastFeatureARWeakLimitStickyHDPHMM(
         _FastFeatureRegressionMixin,
         pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
+
+#########################
+#  changepoints models  #
+#########################
+
+class ARWeakLimitHDPHSMMPossibleChangepoints(
+        _ARMixin,
+        pyhsmm.models.WeakLimitHDPHSMMPossibleChangepoints):
+    pass
+
+# TODO separate trans
 
