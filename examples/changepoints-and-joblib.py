@@ -40,7 +40,7 @@ changepoints = [labels_to_changepoints(l[nlags-2:]) for l in labels]
 #  model and inference  #
 #########################
 
-model = am.ARWeakLimitHDPHSMMPossibleChangepoints(
+model = am.ARWeakLimitHDPHSMMPossibleChangepointsSeparateTrans(
         alpha_a_0=1.,alpha_b_0=1./10,
         gamma_a_0=1.,gamma_b_0=1./10,
         init_state_distn='uniform',
@@ -57,7 +57,7 @@ model = am.ARWeakLimitHDPHSMMPossibleChangepoints(
         )
 
 for data, c in zip(datas,changepoints):
-    model.add_data(data=data,changepoints=c)
+    model.add_data(data=data,changepoints=c,group_id=0)
 
 ###############
 #  inference  #

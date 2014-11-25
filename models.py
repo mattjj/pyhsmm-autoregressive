@@ -564,5 +564,8 @@ class ARWeakLimitHDPHSMMPossibleChangepoints(
         pyhsmm.models.WeakLimitHDPHSMMPossibleChangepoints):
     pass
 
-# TODO separate trans
+class ARWeakLimitHDPHSMMPossibleChangepointsSeparateTrans(
+        _ARMixin,
+        pyhsmm.models.WeakLimitHDPHSMMPossibleChangepointsSeparateTrans):
+    pass
 
