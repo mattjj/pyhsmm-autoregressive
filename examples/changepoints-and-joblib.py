@@ -34,7 +34,9 @@ datas, labels = zip(*[truemodel.generate(500) for _ in range(2)])
 #  get the changepoints  #
 ##########################
 
-changepoints = [labels_to_changepoints(l[nlags-2:]) for l in labels]
+changepoints = [[(a+2,b+2) for a,b in labels_to_changepoints(l)] for l in labels]
+for c in changepoints:
+    c[0] = (0,c[0][1])
 
 #########################
 #  model and inference  #
@@ -64,5 +66,6 @@ for data, c in zip(datas,changepoints):
 ###############
 
 for itr in progprint_xrange(25):
-    model.resample_model(joblib_jobs=2)
+    model.resample_model()
+    # model.resample_model(joblib_jobs=2)
 
