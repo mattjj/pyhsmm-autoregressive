@@ -562,7 +562,8 @@ class FastFeatureARWeakLimitStickyHDPHMM(
 class _ARChangepointsMixin(object):
     def add_data(self,data,changepoints,strided=False,**kwargs):
         nlags = self.nlags
-        changepoints = [(max(a-nlags,0),b-nlags) for a,b in changepoints if b > nlags]
+        if sum(b-a for a,b in changepoints) != data.shape[0] - nlags:
+            changepoints = [(max(a-nlags,0),b-nlags) for a,b in changepoints if b > nlags]
         super(_ARChangepointsMixin,self).add_data(
                 data=data,changepoints=changepoints,**kwargs)
 
