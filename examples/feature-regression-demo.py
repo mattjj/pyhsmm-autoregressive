@@ -64,7 +64,7 @@ windowsize = 2
 featuresize = featurefn(data[:windowsize]).shape[0]
 affine = True
 
-model = m.FastFeatureARHMM(
+model = m.FeatureARHMM(
         windowsize=windowsize,featurefn=featurefn, # new!
         alpha=4.,
         init_state_distn='uniform',
