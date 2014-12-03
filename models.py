@@ -432,6 +432,9 @@ class FastARWeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans(
         pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans):
     pass
 
+class ARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,ARWeakLimitStickyHDPHMM):
+    _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
+
 class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
     _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
 
