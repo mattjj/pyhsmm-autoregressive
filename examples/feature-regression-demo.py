@@ -57,8 +57,8 @@ def quadratic_featurefn(data_window):
             flat, # all the raw lags
             np.triu(np.outer(flat,flat)).ravel()] # all 2nd degree monomials
 
-# featurefn = quadratic_featurefn
-featurefn = linear_featurefn
+featurefn = quadratic_featurefn
+# featurefn = linear_featurefn
 
 windowsize = 2
 featuresize = featurefn(data[:windowsize]).shape[0]
