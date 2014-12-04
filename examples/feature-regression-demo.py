@@ -52,10 +52,9 @@ def linear_featurefn(data_window):
 
 # or we can add in more features to try regressing on
 def quadratic_featurefn(data_window):
-    flat = data_window.ravel()
-    return np.r_[
-            flat, # all the raw lags
-            np.triu(np.outer(flat,flat)).ravel()] # all 2nd degree monomials
+    # all the linear features plus the within-lag 2nd degree monomials
+    return np.concatenate([data_window.ravel()]
+            + [np.outer(v,v)[np.triu_indices(v.shape[0])] for v in data_window])
 
 featurefn = quadratic_featurefn
 # featurefn = linear_featurefn
