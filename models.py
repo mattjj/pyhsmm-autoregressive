@@ -497,6 +497,12 @@ class FeatureARWeakLimitStickyHDPHMM(
         pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
 
+class FeatureARWeakLimitStickyHDPHMMSeparateTrans(
+    _SeparateTransMixin,
+    _FeatureRegressionMixin,
+    pyhsmm.models.WeakLimitStickyHDPHMM):
+    pass
+
 ### low-level code
 
 class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
