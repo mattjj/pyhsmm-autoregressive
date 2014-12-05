@@ -60,7 +60,7 @@ class _ARMixin(object):
         self.init_emission_distn.resample(
                 [s.data[:self.nlags].ravel() for s in self.states_list])
 
-    def _get_joblib_pair(self,s):
+    def _get_multiprocessing_pair(self,s):
         return (undo_AR_striding(s.data,self.nlags),s._kwargs)
 
     ### prediction
@@ -265,7 +265,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         super(_INBHSMMFastResamplingMixin,self).resample_states(**kwargs)
 
     def resample_states(self,**kwargs):
-        # NOTE: kwargs is just to absorb any joblib stuff
+        # NOTE: kwargs is just to absorb any multiprocessing stuff
         # TODO only use this when the number/size of sequences warrant it
         from messages import resample_arhmm
         assert self.obs_distns[0].D_out > 1
@@ -511,7 +511,7 @@ class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
         super(_FastFeatureRegressionMixin,self).add_data(data=data.astype(self.dtype),**kwargs)
 
     def resample_states(self,**kwargs):
-        # NOTE: kwargs is just to absorb any joblib stuff
+        # NOTE: kwargs is just to absorb any multiprocessing stuff
         from messages import resample_featureregressionhmm
         assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:
