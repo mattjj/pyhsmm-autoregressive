@@ -447,10 +447,13 @@ class _FeatureRegressionMixin(object):
         self.windowsize, self.featurefn = windowsize, featurefn
         super(_FeatureRegressionMixin,self).__init__(**kwargs)
 
-    def add_data(self,data,featureseq=None,**kwargs):
-        if featureseq is None:
-            data, featureseq = self._get_featureseq(data)
-        super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
+    def add_data(self,data,featureseq=None,features_and_data=None,**kwargs):
+        if features_and_data is not None:
+            super(_FeatureRegressionMixin,self).add_data(data=features_and_data)
+        else:
+            if featureseq is None:
+                data, featureseq = self._get_featureseq(data)
+            super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
 
     def _get_featureseq(self,data):
         assert None not in (self.featurefn, self.windowsize)
@@ -460,6 +463,9 @@ class _FeatureRegressionMixin(object):
         for t in xrange(out.shape[0]):
             out[t] = self.featurefn(data[t:t+self.windowsize])
         return data[self.windowsize:], out
+
+    def _get_multiprocessing_pair(self,s):
+        return (None, dict(s._kwargs, features_and_data=s.data))
 
     ### prediction
 
