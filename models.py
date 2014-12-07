@@ -60,7 +60,7 @@ class _ARMixin(object):
         self.init_emission_distn.resample(
                 [s.data[:self.nlags].ravel() for s in self.states_list])
 
-    def _get_joblib_pair(self,s):
+    def _get_multiprocessing_pair(self,s):
         return (undo_AR_striding(s.data,self.nlags),s._kwargs)
 
     ### prediction
@@ -265,7 +265,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         super(_INBHSMMFastResamplingMixin,self).resample_states(**kwargs)
 
     def resample_states(self,**kwargs):
-        # NOTE: kwargs is just to absorb any joblib stuff
+        # NOTE: kwargs is just to absorb any multiprocessing stuff
         # TODO only use this when the number/size of sequences warrant it
         from messages import resample_arhmm
         assert self.obs_distns[0].D_out > 1
@@ -432,6 +432,9 @@ class FastARWeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans(
         pyhsmm.models.WeakLimitHDPHSMMTruncatedIntNegBinSeparateTrans):
     pass
 
+class ARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,ARWeakLimitStickyHDPHMM):
+    _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
+
 class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
     _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
 
@@ -444,10 +447,13 @@ class _FeatureRegressionMixin(object):
         self.windowsize, self.featurefn = windowsize, featurefn
         super(_FeatureRegressionMixin,self).__init__(**kwargs)
 
-    def add_data(self,data,featureseq=None,**kwargs):
-        if featureseq is None:
-            data, featureseq = self._get_featureseq(data)
-        super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
+    def add_data(self,data,featureseq=None,features_and_data=None,**kwargs):
+        if features_and_data is not None:
+            super(_FeatureRegressionMixin,self).add_data(data=features_and_data)
+        else:
+            if featureseq is None:
+                data, featureseq = self._get_featureseq(data)
+            super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
 
     def _get_featureseq(self,data):
         assert None not in (self.featurefn, self.windowsize)
@@ -457,6 +463,9 @@ class _FeatureRegressionMixin(object):
         for t in xrange(out.shape[0]):
             out[t] = self.featurefn(data[t:t+self.windowsize])
         return data[self.windowsize:], out
+
+    def _get_multiprocessing_pair(self,s):
+        return (None, dict(s._kwargs, features_and_data=s.data))
 
     ### prediction
 
@@ -494,6 +503,12 @@ class FeatureARWeakLimitStickyHDPHMM(
         pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
 
+class FeatureARWeakLimitStickyHDPHMMSeparateTrans(
+    _SeparateTransMixin,
+    _FeatureRegressionMixin,
+    pyhsmm.models.WeakLimitStickyHDPHMM):
+    pass
+
 ### low-level code
 
 class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
@@ -508,7 +523,7 @@ class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
         super(_FastFeatureRegressionMixin,self).add_data(data=data.astype(self.dtype),**kwargs)
 
     def resample_states(self,**kwargs):
-        # NOTE: kwargs is just to absorb any joblib stuff
+        # NOTE: kwargs is just to absorb any multiprocessing stuff
         from messages import resample_featureregressionhmm
         assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:

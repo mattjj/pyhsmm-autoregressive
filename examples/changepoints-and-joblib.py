@@ -66,5 +66,6 @@ for data, c in zip(datas,changepoints):
 ###############
 
 for itr in progprint_xrange(25):
-    model.resample_model(joblib_jobs=2)
+    model.resample_model(num_procs=2)
+    # model.resample_model()
 
