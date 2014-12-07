@@ -449,11 +449,11 @@ class _FeatureRegressionMixin(object):
 
     def add_data(self,data,featureseq=None,features_and_data=None,**kwargs):
         if features_and_data is not None:
-            super(_FeatureRegressionMixin,self).add_data(data=features_and_data)
+            super(_FeatureRegressionMixin,self).add_data(data=features_and_data,**kwargs)
         else:
             if featureseq is None:
                 data, featureseq = self._get_featureseq(data)
-            super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)))
+            super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)),**kwargs)
 
     def _get_featureseq(self,data):
         assert None not in (self.featurefn, self.windowsize)
