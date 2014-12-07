@@ -22,13 +22,13 @@ As = [np.hstack((-np.eye(2),2*np.eye(2))),
         np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
 
 truemodel = m.ARHSMM(
-        alpha=4.,init_state_concentration=4.,
+        alpha=10.,init_state_concentration=4.,
         obs_distns=[d.AutoRegression(A=A,sigma=0.1*np.eye(2)) for A in As],
-        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
-            for state in range(len(As))],
+        dur_distns=
+        [pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)]+[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*6,beta_0=4)]*2
         )
 
-data = truemodel.rvs(1000)
+data = truemodel.rvs(500)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
