@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 import pyhsmm
 from pyhsmm.util.text import progprint_xrange
-from pyhsmm.util.stats import whiten, cov
+from pyhsmm.util.stats import cov
 
 import autoregressive.models as m
 import autoregressive.distributions as d
@@ -21,11 +21,11 @@ As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
 truemodel = m.ARHSMM(
         alpha=4.,init_state_concentration=4.,
         obs_distns=[d.AutoRegression(A=A,sigma=np.eye(2)) for A in As],
-        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
+        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*100,beta_0=4)
             for state in range(len(As))],
         )
 
-data, labels = truemodel.generate(1000)
+data, labels = truemodel.generate(10000)
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -44,39 +44,42 @@ data_dim = data.shape[1]
 
 # featurefn takes the most recent process emissions in data_window
 # and returns a 1D feature vector
-# data_window is windowsize x data_dim
+# data_window is nlags x data_dim
 
-# linear features gives us regular AR
 def linear_featurefn(data_window):
     return data_window.flatten()
 
-# or we can add in more features to try regressing on
 def quadratic_featurefn(data_window):
-    # all the linear features plus the within-lag 2nd degree monomials
-    return np.concatenate([data_window.ravel()]
-            + [np.outer(v,v)[np.triu_indices(v.shape[0])] for v in data_window])
+    return np.concatenate(
+            [data_window.ravel()]
+            + [np.outer(v-w,v-w)[np.triu_indices(v.shape[0])].ravel()
+                for v,w in zip(data_window[:-1],data_window[1:])]
+            )
 
 featurefn = quadratic_featurefn
 # featurefn = linear_featurefn
 
-windowsize = 2
-featuresize = featurefn(data[:windowsize]).shape[0]
+nlags = 2
+featuresize = featurefn(data[:nlags]).shape[0]
 affine = True
 
-model = m.FeatureARHMM(
-        windowsize=windowsize,featurefn=featurefn, # new!
-        alpha=4.,
+model = m.FeatureARWeakLimitStickyHDPHMM(
+        windowsize=nlags,featurefn=featurefn, # new!
+        alpha=4.,gamma=4.,kappa=100.,
         init_state_distn='uniform',
         obs_distns=[
-            d.ARDAutoRegression( # or just AutoRegression
+            d.AutoRegression( # or just AutoRegression
                 nu_0=data_dim+3,
                 S_0=np.eye(data_dim),
                 M_0=np.zeros((data_dim,featuresize+affine)),
-                a=5.,b=0.1,niter=10, # instead of K_0
+                # a=5.,b=0.1,niter=10, # instead of K_0
+                K_0=np.eye(featuresize+affine),
                 affine=affine)
             for state in range(Nmax)],
         )
 
+# model.add_data(data,stateseq=labels)
+# model.resample_obs_distns()
 model.add_data(data)
 
 ###############
@@ -95,7 +98,7 @@ colors = model._get_colors()
 cmap = plt.get_cmap()
 stateseq = model.states_list[0].stateseq
 for i,s in enumerate(np.unique(stateseq)):
-    plt.plot(data[windowsize:][s==stateseq,0],data[windowsize:][s==stateseq,1],
+    plt.plot(data[nlags:][s==stateseq,0],data[nlags:][s==stateseq,1],
             color=cmap(colors[s]),linestyle='',marker='o')
 
 # plt.set_cmap('bone')

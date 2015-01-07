@@ -60,7 +60,7 @@ class _ARMixin(object):
         self.init_emission_distn.resample(
                 [s.data[:self.nlags].ravel() for s in self.states_list])
 
-    def _get_multiprocessing_pair(self,s):
+    def _get_joblib_pair(self,s):
         return (undo_AR_striding(s.data,self.nlags),s._kwargs)
 
     ### prediction
@@ -455,6 +455,26 @@ class _FeatureRegressionMixin(object):
                 data, featureseq = self._get_featureseq(data)
             super(_FeatureRegressionMixin,self).add_data(data=np.hstack((featureseq,data)),**kwargs)
 
+    def generate(self,T=None,featureseq=None,keep=True):
+        assert (T is None) ^ (featureseq is None)
+
+        if featureseq is not None:
+            s = self._states_class(model=self,T=featureseq.shape[0],initialize_from_prior=True)
+            data = self._generate_obs(s)
+        else:
+            raise NotImplementedError
+
+        if keep:
+            self.add_data(data=data,featureseq=featureseq)
+
+        return data, s.stateseq
+
+    def _generate_obs(self,states_obj):
+        data = np.empty((featureseq.shape[0], self.D))
+        for t, state in enumerate(s.stateseq):
+            data[t] = self.obs_distns[state].rvs(np.atleast_2d(featureseq[t]))
+        return data
+
     def _get_featureseq(self,data):
         assert None not in (self.featurefn, self.windowsize)
         assert data.ndim == 2 and data.shape[0] > self.windowsize
@@ -464,7 +484,7 @@ class _FeatureRegressionMixin(object):
             out[t] = self.featurefn(data[t:t+self.windowsize])
         return data[self.windowsize:], out
 
-    def _get_multiprocessing_pair(self,s):
+    def _get_joblib_pair(self,s):
         return (None, dict(s._kwargs, features_and_data=s.data))
 
     ### prediction
