@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib.collections import LineCollection
 
 import pyhsmm
 from pyhsmm.util.general import rle, cumsum
@@ -88,8 +89,26 @@ class _ARMixin(object):
 
     ### plotting
 
+    def _plot_2d_data_scatter(self,ax=None,state_colors=None,update=False):
+        ax = ax if ax else plt.gca()
+        state_colors = self._get_colors(scalars=True)
+
+        artists = super(_ARMixin,self)._plot_2d_data_scatter(ax=ax,update=update)
+        for s, data in zip(self.states_list,self.datas):
+            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
+            colorseq = np.array([state_colors[state] for state in stateseq])
+            if update and hasattr(s,'_data_linesegments'):
+                s._data_linesegments.set_array(colorseq)
+            else:
+                lc = s._data_linesegments = LineCollection(AR_striding(data,1).reshape(-1,2,2))
+                lc.set_array(colorseq)
+                lc.set_linewidth(0.5)
+                ax.add_collection(lc)
+            artists.append(s._data_linesegments)
+
+        return artists
+
     def _plot_stateseq_data_values(self,s,ax,state_colors,update,data=None):
-        from matplotlib.collections import LineCollection
 
         data = undo_AR_striding(s.data,self.nlags)
         stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
