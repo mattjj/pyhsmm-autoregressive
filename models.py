@@ -4,16 +4,11 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 
 import pyhsmm
-from pyhsmm.models import _SeparateTransMixin
 from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
 
 from util import AR_striding, undo_AR_striding
-from autoregressive.states import ARHMMStates, ARHSMMStates, \
-        ARHMMStatesEigen, ARHSMMStatesEigen, ARHSMMStatesGeo, \
-        ARHSMMStatesIntegerNegativeBinomialStates, \
-        ARHMMStatesEigenSeparateTrans, ARHSMMStatesEigenSeparateTrans, \
-        ARHSMMStatesIntegerNegativeBinomialStatesSeparateTrans
+
 
 class _ARMixin(object):
     def __init__(self,init_emission_distn=None,**kwargs):
@@ -91,8 +86,10 @@ class _ARMixin(object):
 #  model classes  #
 ###################
 
+
 class ARHMM(_ARMixin,pyhsmm.models.HMM):
     pass
+
 
 class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
     pass
@@ -100,6 +97,7 @@ class ARWeakLimitHDPHMM(_ARMixin,pyhsmm.models.WeakLimitHDPHMM):
 
 class ARHSMM(_ARMixin,pyhsmm.models.HSMM):
     pass
+
 
 class ARWeakLimitHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitHDPHSMM):
     pass
@@ -120,8 +118,10 @@ class ARWeakLimitGeoHDPHSMM(_ARMixin,pyhsmm.models.WeakLimitGeoHDPHSMM):
 class ARHMMSeparateTrans(_ARMixin,pyhsmm.models.HMMSeparateTrans):
     pass
 
+
 class ARWeakLimitHDPHMMSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHMMSeparateTrans):
     pass
+
 
 class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
@@ -141,6 +141,7 @@ class ARWeakLimitHDPHSMMDelayedIntNegBin(
                 - s.delays[state] for s in self.states_list])
         self._clear_caches()
 
+
 class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
         _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMDelayedIntNegBinSeparateTrans):
@@ -155,7 +156,9 @@ class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
                 - s.delays[state] for s in self.states_list])
         self._clear_caches()
 
+
 ### low-level code
+
 
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -212,6 +215,7 @@ class _HMMFastResamplingMixin(_ARMixin):
             self._alphans = [np.empty((s.T,self.num_states),
                 dtype=self.dtype) for s in self.states_list]
         return self._alphans
+
 
 class _INBHSMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -274,11 +278,14 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
 class FastARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
     pass
 
+
 class FastARWeakLimitHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitHDPHMM):
     pass
 
+
 class FastARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
+
 
 class FastARWeakLimitHDPHSMMIntNegBin(
         _INBHSMMFastResamplingMixin,
@@ -288,6 +295,7 @@ class FastARWeakLimitHDPHSMMIntNegBin(
 ########################
 #  feature regression  #
 ########################
+
 
 class _FeatureRegressionMixin(object):
     def __init__(self,windowsize=None,featurefn=None,**kwargs):
@@ -362,13 +370,16 @@ class _FeatureRegressionMixin(object):
                         color=cmap(colors[state]))
             plt.xlim(0,s.T-1)
 
+
 class FeatureARHMM(_FeatureRegressionMixin,pyhsmm.models.HMM):
     pass
+
 
 class FeatureARWeakLimitStickyHDPHMM(
         _FeatureRegressionMixin,
         pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
+
 
 class FeatureARWeakLimitStickyHDPHMMSeparateTrans(
     _FeatureRegressionMixin,
@@ -376,6 +387,7 @@ class FeatureARWeakLimitStickyHDPHMMSeparateTrans(
     pass
 
 ### low-level code
+
 
 class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
     _obs_stats = None
@@ -428,8 +440,10 @@ class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
                 dtype=self.dtype) for s in self.states_list]
         return self._alphans
 
+
 class FastFeatureARHMM(_FastFeatureRegressionMixin,pyhsmm.models.HMM):
     pass
+
 
 class FastFeatureARWeakLimitStickyHDPHMM(
         _FastFeatureRegressionMixin,
@@ -440,6 +454,7 @@ class FastFeatureARWeakLimitStickyHDPHMM(
 #  changepoints models  #
 #########################
 
+
 class _ARChangepointsMixin(object):
     def add_data(self,data,changepoints,strided=False,**kwargs):
         nlags = self.nlags
@@ -448,11 +463,13 @@ class _ARChangepointsMixin(object):
         super(_ARChangepointsMixin,self).add_data(
                 data=data,changepoints=changepoints,**kwargs)
 
+
 class ARWeakLimitHDPHSMMPossibleChangepoints(
         _ARChangepointsMixin,
         _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMPossibleChangepoints):
     pass
+
 
 class ARWeakLimitHDPHSMMPossibleChangepointsSeparateTrans(
         _ARChangepointsMixin,
