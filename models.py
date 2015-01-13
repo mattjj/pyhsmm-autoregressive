@@ -88,10 +88,26 @@ class _ARMixin(object):
 
     ### plotting
 
-    def _plot_stateseq_data_values(self,s,ax,state_colors,update):
-        strided_data, s.data = s.data, undo_AR_striding(s.data,self.nlags)[self.nlags:]
-        super(_ARMixin,self)._plot_stateseq_data_values(s,ax,state_colors,update)
-        s.data = strided_data
+    def _plot_stateseq_data_values(self,s,ax,state_colors,update,data=None):
+        from matplotlib.collections import LineCollection
+
+        data = undo_AR_striding(s.data,self.nlags)
+        stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
+        colorseq = np.tile(np.array([state_colors[state] for state in stateseq]),data.shape[1])
+
+        if update and hasattr(s,'_data_lc'):
+            s._data_lc.set_array(colorseq)
+        else:
+            ts = np.arange(s.T+self.nlags)
+            segments = np.vstack(
+                [AR_striding(np.hstack((ts[:,None], scalarseq[:,None])),1).reshape(-1,2,2)
+                    for scalarseq in data.T])
+            lc = s._data_lc = LineCollection(segments)
+            lc.set_array(colorseq)
+            lc.set_linewidth(0.5)
+            ax.add_collection(lc)
+
+        return s._data_lc
 
 ###################
 #  model classes  #
@@ -358,28 +374,6 @@ class _FeatureRegressionMixin(object):
     def predict(self,seed_data,timesteps,with_noise=False):
         assert None not in (self.featurefn,self.windowsize)
         raise NotImplementedError
-
-    ### plotting
-
-    def plot_observations(self,colors=None,states_objs=None):
-        if colors is None:
-            colors = self._get_colors()
-        if states_objs is None:
-            states_objs = self.states_list
-
-        cmap = cm.get_cmap()
-
-        for s in states_objs:
-            data = s.data[:,-self.obs_distns[0].D_out:]
-
-            stateseq_norep, durs = rle(s.stateseq)
-            starts = np.concatenate(((0,),durs.cumsum()))
-            for state,start,dur in zip(stateseq_norep,starts,durs):
-                plt.plot(
-                        np.arange(start,start+data[start:start+dur+1].shape[0]),
-                        data[start:start+dur+1],
-                        color=cmap(colors[state]))
-            plt.xlim(0,s.T-1)
 
 
 class FeatureARHMM(_FeatureRegressionMixin,pyhsmm.models.HMM):

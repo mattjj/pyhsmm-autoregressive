@@ -41,7 +41,7 @@ plt.gcf().suptitle('truth')
 
 Nmax = 10
 affine = True
-nlags = 3
+nlags = 2
 model = m.ARHMM(
         alpha=4.,
         init_state_distn='uniform',
@@ -61,9 +61,17 @@ model.add_data(data)
 #  inference  #
 ###############
 
-for itr in progprint_xrange(100):
-    model.resample_model()
+from moviepy.video.io.bindings import mplfig_to_npimage
+from moviepy.editor import VideoClip
 
-model.plot()
-plt.gcf().suptitle('sampled')
+fig = model.make_figure()
+model.plot(fig=fig,draw=False)
+
+def make_frame_mpl(t):
+    model.resample_model()
+    model.plot(fig=fig,update=True,draw=False)
+    return mplfig_to_npimage(fig)
+
+animation = VideoClip(make_frame_mpl, duration=5)
+animation.write_videofile('gibbs.mp4',fps=24)
 
