@@ -22,7 +22,7 @@ As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
 truemodel = m.ARHSMM(
         alpha=4.,init_state_concentration=4.,
         obs_distns=[d.AutoRegression(A=A,sigma=np.eye(2)) for A in As],
-        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=4*25,beta_0=4)
+        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=2*25,beta_0=2)
             for state in range(len(As))],
         )
 
@@ -50,7 +50,7 @@ model = m.ARHMM(
                 nu_0=3,
                 S_0=np.eye(2),
                 M_0=np.zeros((2,2*nlags+affine)),
-                K_0=np.eye(2*nlags+affine),
+                K_0=10*np.eye(2*nlags+affine),
                 affine=affine)
             for state in range(Nmax)],
         )
@@ -72,6 +72,6 @@ def make_frame_mpl(t):
     model.plot(fig=fig,update=True,draw=False)
     return mplfig_to_npimage(fig)
 
-animation = VideoClip(make_frame_mpl, duration=5)
-animation.write_videofile('gibbs.mp4',fps=24)
+animation = VideoClip(make_frame_mpl, duration=3)
+animation.write_videofile('gibbs.mp4',fps=50)
 
