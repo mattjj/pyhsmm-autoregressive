@@ -26,27 +26,35 @@ class _ARMixin(object):
         strided_data = AR_striding(data,self.nlags) if not strided else data
         super(_ARMixin,self).add_data(data=strided_data,**kwargs)
 
-    def generate(self,T,keep=True):
-        s = self._states_class(model=self,T=T,initialize_from_prior=True)
-        data = self._generate_obs(s)
-        if keep:
-            self.states_list.append(s)
-        return data, s.stateseq
+    def _generate_obs(self,s):
+        if s.data is None:
+            # generating brand new data sequence
+            data = np.zeros((s.T+self.nlags,self.D))
 
-    def _generate_obs(self,states_obj):
-        data = np.zeros((states_obj.T+self.nlags,self.D))
+            if hasattr(self,'prefix'):
+                data[:self.nlags] = self.prefix
+            else:
+                data[:self.nlags] = self.init_emission_distn\
+                        .rvs().reshape(data[:self.nlags].shape)
 
-        if hasattr(self,'prefix'):
-            data[:self.nlags] = self.prefix
+            for idx, state in enumerate(s.stateseq):
+                data[idx+self.nlags] = \
+                    self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
+
+            s.data = AR_striding(data,self.nlags)
+
         else:
-            data[:self.nlags] = self.init_emission_distn\
-                    .rvs().reshape(data[:self.nlags].shape)
+            # filling in missing data
+            data = undo_AR_striding(s.data,self.nlags)
 
-        for idx, state in enumerate(states_obj.stateseq):
-            data[idx+self.nlags] = \
-                self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
+            # TODO should sample from init_emission_distn if there are nans in
+            # data[:self.nlags]
+            assert not np.isnan(data[:self.nlags]).any(), "can't have missing data (nans) in prefix"
 
-        states_obj.data = AR_striding(data,self.nlags)
+            nan_idx, = np.where(np.isnan(data[self.nlags:]).any(1))
+            for idx, state in zip(nan_idx,s.stateseq[nan_idx]):
+                data[idx+self.nlags] = \
+                    self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
 
         return data
 
@@ -63,32 +71,6 @@ class _ARMixin(object):
     def _get_joblib_pair(self,s):
         return (undo_AR_striding(s.data,self.nlags),s._kwargs)
 
-    ### prediction
-
-    def predict(self,seed_data,timesteps,with_noise=False):
-        assert seed_data.shape[0] >= self.nlags
-
-        full_data = np.vstack((seed_data,np.nan*np.ones((timesteps,self.D))))
-        self.add_data(full_data)
-        s = self.states_list.pop()
-        s.resample() # fills in extra states
-
-        if with_noise:
-            for state, row in zip(s.stateseq[-timesteps:],s.data[-timesteps:]):
-                row[-self.D:] = self.obs_distns[state].rvs(lagged_data=row[:-self.D])
-        else:
-            for state, row in zip(s.stateseq[-timesteps:],s.data[-timesteps:]):
-                o = self.obs_distns[state]
-                if not o.affine:
-                    row[-self.D:] = o.A.dot(row[:-self.D])
-                else:
-                    row[-self.D:] = o.A[:,:-1].dot(row[:-self.D]) + np.squeeze(o.A[:,-1])
-
-        return undo_AR_striding(s.data,nlags=self.nlags)
-
-    def fill_in(self,data):
-        raise NotImplementedError
-
     ### convenient properties
 
     @property
@@ -102,28 +84,6 @@ class _ARMixin(object):
     @property
     def P(self):
         return self.D*self.nlags
-
-    ### plotting
-
-    def plot_observations(self,colors=None,states_objs=None):
-        if colors is None:
-            colors = self._get_colors()
-        if states_objs is None:
-            states_objs = self.states_list
-
-        cmap = cm.get_cmap()
-
-        for s in states_objs:
-            data = undo_AR_striding(s.data,self.nlags)
-
-            stateseq_norep, durs = rle(s.stateseq)
-            starts = np.concatenate(((0,),durs.cumsum()))
-            for state,start,dur in zip(stateseq_norep,starts,durs):
-                plt.plot(
-                        np.arange(start,start+data[start:start+dur+1].shape[0]),
-                        data[start:start+dur+1],
-                        color=cmap(colors[state]))
-            plt.xlim(0,s.T-1)
 
 ###################
 #  model classes  #
