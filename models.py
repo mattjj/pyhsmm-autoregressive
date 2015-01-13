@@ -82,6 +82,17 @@ class _ARMixin(object):
     def P(self):
         return self.D*self.nlags
 
+    @property
+    def datas(self):
+        return [undo_AR_striding(s.data,self.nlags) for s in self.states_list]
+
+    ### plotting
+
+    def _plot_stateseq_data_values(self,s,ax,state_colors,update):
+        strided_data, s.data = s.data, undo_AR_striding(s.data,self.nlags)[self.nlags:]
+        super(_ARMixin,self)._plot_stateseq_data_values(s,ax,state_colors,update)
+        s.data = strided_data
+
 ###################
 #  model classes  #
 ###################
