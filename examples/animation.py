@@ -20,13 +20,14 @@ As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
         np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
 
 truemodel = m.ARHSMM(
-        alpha=4.,init_state_concentration=4.,
+        alpha=2.,init_state_distn='uniform',
         obs_distns=[d.AutoRegression(A=A,sigma=np.eye(2)) for A in As],
-        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=2*25,beta_0=2)
+        dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=1*25,beta_0=1)
             for state in range(len(As))],
         )
 
-data, labels = truemodel.generate(500)
+data, labels = truemodel.generate(1000)
+data += np.random.normal(size=data.shape) # some extra noise
 
 plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
@@ -42,13 +43,13 @@ plt.gcf().suptitle('truth')
 Nmax = 10
 affine = True
 nlags = 2
-model = m.ARHMM(
-        alpha=4.,
+model = m.ARWeakLimitStickyHDPHMM(
+        alpha=4.,gamma=4.,kappa=50.,
         init_state_distn='uniform',
         obs_distns=[
             d.AutoRegression(
-                nu_0=3,
-                S_0=np.eye(2),
+                nu_0=2.5,
+                S_0=2.5*np.eye(2),
                 M_0=np.zeros((2,2*nlags+affine)),
                 K_0=10*np.eye(2*nlags+affine),
                 affine=affine)
@@ -73,5 +74,5 @@ def make_frame_mpl(t):
     return mplfig_to_npimage(fig)
 
 animation = VideoClip(make_frame_mpl, duration=3)
-animation.write_videofile('gibbs.mp4',fps=50)
+animation.write_videofile('gibbs.mp4',fps=30)
 

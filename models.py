@@ -91,10 +91,23 @@ class _ARMixin(object):
 
     def _plot_2d_data_scatter(self,ax=None,state_colors=None,update=False):
         ax = ax if ax else plt.gca()
-        state_colors = self._get_colors(scalars=True)
 
-        artists = super(_ARMixin,self)._plot_2d_data_scatter(ax=ax,update=update)
+        artists = []
         for s, data in zip(self.states_list,self.datas):
+
+            # scatter, like _HMMBase._plot_2d_data_scatter but pads the stateseq
+            state_colors = state_colors if state_colors else self._get_colors()
+            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq))
+            colorseq = np.array([state_colors[state] for state in stateseq])
+            if update and hasattr(s,'_data_scatter'):
+                s._data_scatter.set_offsets(data[:,:2])
+                s._data_scatter.set_color(colorseq)
+            else:
+                s._data_scatter = ax.scatter(data[:,0],data[:,1],c=colorseq,s=5)
+            artists.append(s._data_scatter)
+
+            # connect scatter points with line segments
+            state_colors = self._get_colors(scalars=True)
             stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
             colorseq = np.array([state_colors[state] for state in stateseq])
             if update and hasattr(s,'_data_linesegments'):
