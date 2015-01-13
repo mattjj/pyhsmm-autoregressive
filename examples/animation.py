@@ -29,9 +29,11 @@ truemodel = m.ARHSMM(
 data, labels = truemodel.generate(1000)
 data += np.random.normal(size=data.shape) # some extra noise
 
-plt.figure()
-plt.plot(data[:,0],data[:,1],'bx-')
-plt.gcf().suptitle('data')
+fig, spa = plt.subplots(2,1)
+spa[0].plot(data[:,0],data[:,1],'bx-')
+spa[1].plot(data,'bx-')
+spa[1].set_xlim(0,data.shape[0])
+fig.suptitle('data')
 
 truemodel.plot()
 plt.gcf().suptitle('truth')
@@ -74,5 +76,5 @@ def make_frame_mpl(t):
     return mplfig_to_npimage(fig)
 
 animation = VideoClip(make_frame_mpl, duration=3)
-animation.write_videofile('gibbs.mp4',fps=30)
+animation.write_videofile('gibbs.mp4',fps=100)
 
