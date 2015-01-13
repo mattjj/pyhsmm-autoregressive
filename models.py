@@ -87,25 +87,25 @@ class _ARMixin(object):
 
     ### plotting
 
-    def plot_observations(self,colors=None,states_objs=None):
-        if colors is None:
-            colors = self._get_colors()
-        if states_objs is None:
-            states_objs = self.states_list
+#     def plot_observations(self,colors=None,states_objs=None):
+#         if colors is None:
+#             colors = self._get_colors()
+#         if states_objs is None:
+#             states_objs = self.states_list
 
-        cmap = cm.get_cmap()
+#         cmap = cm.get_cmap()
 
-        for s in states_objs:
-            data = undo_AR_striding(s.data,self.nlags)
+#         for s in states_objs:
+#             data = undo_AR_striding(s.data,self.nlags)
 
-            stateseq_norep, durs = rle(s.stateseq)
-            starts = np.concatenate(((0,),durs.cumsum()))
-            for state,start,dur in zip(stateseq_norep,starts,durs):
-                plt.plot(
-                        np.arange(start,start+data[start:start+dur+1].shape[0]),
-                        data[start:start+dur+1],
-                        color=cmap(colors[state]))
-            plt.xlim(0,s.T-1)
+#             stateseq_norep, durs = rle(s.stateseq)
+#             starts = np.concatenate(((0,),durs.cumsum()))
+#             for state,start,dur in zip(stateseq_norep,starts,durs):
+#                 plt.plot(
+#                         np.arange(start,start+data[start:start+dur+1].shape[0]),
+#                         data[start:start+dur+1],
+#                         color=cmap(colors[state]))
+#             plt.xlim(0,s.T-1)
 
 ###################
 #  model classes  #
