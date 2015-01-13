@@ -51,10 +51,10 @@ class _ARMixin(object):
             # data[:self.nlags]
             assert not np.isnan(data[:self.nlags]).any(), "can't have missing data (nans) in prefix"
 
-            nan_idx, = np.where(np.isnan(data).any(1))
+            nan_idx, = np.where(np.isnan(data[self.nlags:]).any(1))
             for idx, state in zip(nan_idx,s.stateseq[nan_idx]):
-                data[idx] = \
-                    self.obs_distns[state].rvs(lagged_data=data[idx-self.nlags:idx])
+                data[idx+self.nlags] = \
+                    self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
 
         return data
 
@@ -84,28 +84,6 @@ class _ARMixin(object):
     @property
     def P(self):
         return self.D*self.nlags
-
-    ### plotting
-
-#     def plot_observations(self,colors=None,states_objs=None):
-#         if colors is None:
-#             colors = self._get_colors()
-#         if states_objs is None:
-#             states_objs = self.states_list
-
-#         cmap = cm.get_cmap()
-
-#         for s in states_objs:
-#             data = undo_AR_striding(s.data,self.nlags)
-
-#             stateseq_norep, durs = rle(s.stateseq)
-#             starts = np.concatenate(((0,),durs.cumsum()))
-#             for state,start,dur in zip(stateseq_norep,starts,durs):
-#                 plt.plot(
-#                         np.arange(start,start+data[start:start+dur+1].shape[0]),
-#                         data[start:start+dur+1],
-#                         color=cmap(colors[state]))
-#             plt.xlim(0,s.T-1)
 
 ###################
 #  model classes  #
