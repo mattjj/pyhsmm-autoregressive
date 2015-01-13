@@ -9,7 +9,7 @@ eigen_include_path = os.path.join(
 pyhsmm_include_path = os.path.join(
         os.path.dirname(pyhsmm.__file__),'internals/')
 
-extra_compile_args = []
+extra_compile_args = ['-w','-DNDEBUG']
 extra_link_args =[]
 
 if '--with-mkl' in sys.argv:

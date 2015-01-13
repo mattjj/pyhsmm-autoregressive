@@ -48,7 +48,7 @@ def is_affine(A):
     return bool(A.shape[1] % A.shape[0])
 
 def is_stable(A):
-    bigA = self.canonical_matrix
+    bigA = canonical_matrix(A)
     return np.all(np.abs(np.linalg.eigvals(bigA)) < 1.)
 
 def dimensions(A):

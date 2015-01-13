@@ -1,5 +1,5 @@
 # distutils: language = c++
-# distutils: extra_compile_args = -O3 -w -DNDEBUG -fopenmp -std=c++11 -DEIGEN_NO_MALLOC
+# distutils: extra_compile_args = -O3 -fopenmp -std=c++11 -DEIGEN_NO_MALLOC
 # distutils: extra_link_args = -fopenmp
 # cython: boundscheck = False
 
@@ -9,7 +9,7 @@ cimport numpy as np
 from libcpp.vector cimport vector
 from libcpp cimport bool
 from libc.stdint cimport int32_t, int64_t
-from cython cimport floating
+from cython cimport floating, integral
 from cython.parallel import prange
 
 cdef extern from "messages.h":
