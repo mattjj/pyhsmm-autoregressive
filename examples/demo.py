@@ -32,7 +32,6 @@ plt.figure()
 plt.plot(data[:,0],data[:,1],'bx-')
 plt.gcf().suptitle('data')
 
-plt.figure()
 truemodel.plot()
 plt.gcf().suptitle('truth')
 
@@ -47,11 +46,11 @@ model = m.ARHMM(
         alpha=4.,
         init_state_distn='uniform',
         obs_distns=[
-            d.ARDAutoRegression(
+            d.AutoRegression(
                 nu_0=3,
                 S_0=np.eye(2),
                 M_0=np.zeros((2,2*nlags+affine)),
-                a=10.,b=0.1,niter=10, # instead of K_0
+                K_0=np.eye(2*nlags+affine),
                 affine=affine)
             for state in range(Nmax)],
         )
@@ -65,15 +64,6 @@ model.add_data(data)
 for itr in progprint_xrange(100):
     model.resample_model()
 
-plt.figure()
 model.plot()
 plt.gcf().suptitle('sampled')
-
-plt.figure()
-colors = model._get_colors()
-cmap = plt.get_cmap()
-stateseq = model.states_list[0].stateseq
-for i,s in enumerate(np.unique(stateseq)):
-    plt.plot(data[model.nlags:][s==stateseq,0],data[model.nlags:][s==stateseq,1],
-            color=cmap(colors[s]),linestyle='',marker='o')
 
