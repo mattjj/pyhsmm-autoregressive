@@ -7,9 +7,7 @@ from pyhsmm.basic.distributions import Regression, ARDRegression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
-from pyhsmm.basic.pybasicbayes.util.general import blockarray
-
-from util import AR_striding, undo_AR_striding, canonical_matrix, is_stable
+from util import AR_striding
 
 class _ARMixin(object):
     @property
@@ -26,6 +24,20 @@ class _ARMixin(object):
     def rvs(self,lagged_data):
         return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
+
+    def resample(self,data=[],stats=None):
+        if stats is None and len(data) > 0:
+            data = self._ensure_strided(data)
+        return super(_ARMixin,self).resample(data=data,stats=stats)
+
+    def _ensure_strided(self,data):
+        if isinstance(data,np.ndarray):
+            if data.shape[1] != self.D*(self.nlags+1):
+                data = AR_striding(data,self.nlags)
+            return data
+        else:
+            return [self._ensure_strided(d) for d in data]
+
 
 class AutoRegression(_ARMixin,Regression):
     pass
