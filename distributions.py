@@ -27,21 +27,6 @@ class _ARMixin(object):
         return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
-    ### for low-level code
-
-    # TODO move this to model mixins
-
-    @property
-    def _param_matrix(self):
-        D, A, sigma = self.D, self.A, self.sigma
-        sigma_inv = np.linalg.inv(sigma)
-        parammat =  -1./2 * blockarray([
-            [A.T.dot(sigma_inv).dot(A), -A.T.dot(sigma_inv)],
-            [-sigma_inv.dot(A), sigma_inv]
-            ])
-        normalizer = D/2*np.log(2*np.pi) + np.log(np.diag(np.linalg.cholesky(sigma))).sum()
-        return parammat, normalizer
-
 class AutoRegression(_ARMixin,Regression):
     pass
 

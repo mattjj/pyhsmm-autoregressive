@@ -237,7 +237,7 @@ class _HMMFastResamplingMixin(_ARMixin):
         from messages import resample_arhmm
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
-            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = map(np.array,zip(*[self._param_matrix(o) for o in self.obs_distns]))
             stats, transcounts, loglikes = resample_arhmm(
                     [s.pi_0.astype(self.dtype) for s in self.states_list],
                     [s.trans_matrix.astype(self.dtype) for s in self.states_list],
@@ -275,6 +275,17 @@ class _HMMFastResamplingMixin(_ARMixin):
                 dtype=self.dtype) for s in self.states_list]
         return self._alphans
 
+    @staticmethod
+    def _param_matrix(o):
+        D, A, sigma = o.D, o.A, o.sigma
+        sigma_inv = np.linalg.inv(sigma)
+        parammat =  -1./2 * blockarray([
+            [A.T.dot(sigma_inv).dot(A), -A.T.dot(sigma_inv)],
+            [-sigma_inv.dot(A), sigma_inv]
+            ])
+        normalizer = D/2*np.log(2*np.pi) + np.log(np.diag(np.linalg.cholesky(sigma))).sum()
+        return parammat, normalizer
+
 
 class _INBHSMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -296,7 +307,7 @@ class _INBHSMMFastResamplingMixin(_ARMixin):
         assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
-            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = map(np.array,zip(*[self._param_matrix(o) for o in self.obs_distns]))
             params, normalizers = params.repeat(s.rs,axis=0), normalizers.repeat(s.rs,axis=0)
             stats, _, loglikes = resample_arhmm(
                     [s.hmm_pi_0.astype(self.dtype) for s in self.states_list],
@@ -443,7 +454,7 @@ class _FastFeatureRegressionMixin(_FeatureRegressionMixin):
         assert self.obs_distns[0].D_out > 1
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
-            params, normalizers = map(np.array,zip(*[o._param_matrix for o in self.obs_distns]))
+            params, normalizers = map(np.array,zip(*[self._param_matrix(o) for o in self.obs_distns]))
             stats, transcounts, loglikes = resample_featureregressionhmm(
                     self.obs_distns[0].D_out,
                     [s.pi_0.astype(self.dtype) for s in self.states_list],
