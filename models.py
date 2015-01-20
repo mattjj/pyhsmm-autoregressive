@@ -89,15 +89,17 @@ class _ARMixin(object):
 
     ### plotting
 
-    def _plot_2d_data_scatter(self,ax=None,state_colors=None,update=False):
+    def _plot_2d_data_scatter(self,ax=None,state_colors=None,plot_slice=slice(None),update=False):
+        # TODO doesn't play very nicely with plot_slice
         ax = ax if ax else plt.gca()
 
         artists = []
         for s, data in zip(self.states_list,self.datas):
+            data = data[plot_slice]
 
             # scatter, like _HMMBase._plot_2d_data_scatter but pads the stateseq
             state_colors = state_colors if state_colors else self._get_colors()
-            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq))
+            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq))[plot_slice]
             colorseq = np.array([state_colors[state] for state in stateseq])
             if update and hasattr(s,'_data_scatter'):
                 s._data_scatter.set_offsets(data[:,:2])
@@ -108,7 +110,7 @@ class _ARMixin(object):
 
             # connect scatter points with line segments
             state_colors = self._get_colors(scalars=True)
-            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
+            stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))[plot_slice]
             colorseq = np.array([state_colors[state] for state in stateseq])
             if update and hasattr(s,'_data_linesegments'):
                 s._data_linesegments.set_array(colorseq)
@@ -121,16 +123,15 @@ class _ARMixin(object):
 
         return artists
 
-    def _plot_stateseq_data_values(self,s,ax,state_colors,update,data=None):
-
-        data = undo_AR_striding(s.data,self.nlags)
-        stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))
+    def _plot_stateseq_data_values(self,s,ax,state_colors,plot_slice,update,data=None):
+        data = undo_AR_striding(s.data,self.nlags)[plot_slice]
+        stateseq = np.concatenate((np.repeat(s.stateseq[0],self.nlags),s.stateseq[:-1]))[plot_slice]
         colorseq = np.tile(np.array([state_colors[state] for state in stateseq]),data.shape[1])
 
         if update and hasattr(s,'_data_lc'):
             s._data_lc.set_array(colorseq)
         else:
-            ts = np.arange(s.T+self.nlags)
+            ts = np.arange(data.shape[0])
             segments = np.vstack(
                 [AR_striding(np.hstack((ts[:,None], scalarseq[:,None])),1).reshape(-1,2,2)
                     for scalarseq in data.T])
