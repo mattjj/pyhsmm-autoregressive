@@ -25,10 +25,13 @@ class _ARMixin(object):
         return super(_ARMixin,self).rvs(
                 x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
-    def resample(self,data=[],stats=None):
-        if stats is None and len(data) > 0:
-            data = self._ensure_strided(data)
-        return super(_ARMixin,self).resample(data=data,stats=stats)
+    def _get_statistics(self,data):
+        return super(_ARMixin,self)._get_statistics(
+                data=self._ensure_strided(data))
+
+    def _get_weighted_statistics(self,data,weights):
+        return super(_ARMixin,self)._get_weighted_statistics(
+                data=self._ensure_strided(data),weights=weights)
 
     def _ensure_strided(self,data):
         if isinstance(data,np.ndarray):
@@ -37,7 +40,6 @@ class _ARMixin(object):
             return data
         else:
             return [self._ensure_strided(d) for d in data]
-
 
 class AutoRegression(_ARMixin,Regression):
     pass
