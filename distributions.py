@@ -33,6 +33,9 @@ class _ARMixin(object):
         return super(_ARMixin,self)._get_weighted_statistics(
                 data=self._ensure_strided(data),weights=weights)
 
+    def log_likelihood(self,xy):
+        return super(_ARMixin,self).log_likelihood(self._ensure_strided(xy))
+
     def _ensure_strided(self,data):
         if isinstance(data,np.ndarray):
             if data.shape[1] != self.D*(self.nlags+1):
