@@ -159,6 +159,22 @@ class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
     _transcounts = []
 
+    # TODO remove me
+    def get_sample(self):
+        trans_params = \
+            {group_id:(trans_distn.beta, trans_distn.trans_matrix)
+             for group_id, trans_distn in self.trans_distns.iteritems()}
+        obs_params = [o.parameters for o in self.obs_distns]
+        return dict(trans_params=trans_params,obs_params=obs_params)
+
+    # TODO remove me
+    def set_sample(self,dct):
+        for group_id, (beta, trans_matrix) in dct['trans_params'].iteritems():
+            self.trans_distns[group_id].beta = beta
+            self.trans_distns[group_id].trans_matrix = trans_matrix
+        for o, params in zip(self.obs_distns,dct['obs_params']):
+            o.parameters = params
+
     def __init__(self,dtype='float32',**kwargs):
         self.dtype = dtype
         super(_HMMFastResamplingMixin,self).__init__(**kwargs)

@@ -42,8 +42,8 @@ plt.gcf().suptitle('truth')
 Nmax = 10
 affine = True
 nlags = 2
-model = m.ARHMM(
-        alpha=4.,
+model = m.FastARWeakLimitStickyHDPHMMSeparateTrans(
+        alpha=4.,gamma=4.,kappa=50.,
         init_state_distn='uniform',
         obs_distns=[
             d.AutoRegression(
@@ -55,7 +55,7 @@ model = m.ARHMM(
             for state in range(Nmax)],
         )
 
-model.add_data(data)
+model.add_data(group_id='foo',data=data)
 
 ###############
 #  inference  #
