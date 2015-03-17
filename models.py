@@ -175,7 +175,7 @@ class _HMMFastResamplingMixin(_ARMixin):
         for o, params in zip(self.obs_distns,dct['obs_params']):
             o.parameters = params
 
-    def __init__(self,dtype='float32',**kwargs):
+    def __init__(self,dtype='float64',**kwargs):
         self.dtype = dtype
         super(_HMMFastResamplingMixin,self).__init__(**kwargs)
 

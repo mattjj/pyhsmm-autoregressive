@@ -67,3 +67,24 @@ for itr in progprint_xrange(100):
 model.plot()
 plt.gcf().suptitle('sampled')
 
+##########################
+#  save and get it back  #
+##########################
+
+print model.obs_distns[0].A
+
+import cPickle as pickle
+with open('foo.pkl','w') as outfile:
+    pickle.dump(model.get_sample(),outfile,protocol=-1)
+
+model.states_list = []
+model.resample_model()
+
+print model.obs_distns[0].A
+
+with open('foo.pkl','r') as infile:
+    sample = pickle.load(infile)
+model.set_sample(sample)
+
+print model.obs_distns[0].A
+
