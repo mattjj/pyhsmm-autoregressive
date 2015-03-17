@@ -175,6 +175,16 @@ class _HMMFastResamplingMixin(_ARMixin):
         for o, params in zip(self.obs_distns,dct['obs_params']):
             o.parameters = params
 
+    def __getstate__(self):
+        dct = self.__dict__.copy()
+        del dct['_alphns']  # this one is important for not crashing things
+        dct['_obs_stats'] = None
+        dct['_transcounts'] = None
+        return dct
+
+    def __setstate__(self,dct):
+        self.__dict__.update(dct)
+
     def __init__(self,dtype='float64',**kwargs):
         self.dtype = dtype
         super(_HMMFastResamplingMixin,self).__init__(**kwargs)
