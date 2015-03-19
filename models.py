@@ -177,7 +177,8 @@ class _HMMFastResamplingMixin(_ARMixin):
 
     def __getstate__(self):
         dct = self.__dict__.copy()
-        del dct['_alphns']  # this one is important for not crashing things
+        if hasattr(self,'_alphans'):
+            del dct['_alphans']  # this one is important for not crashing things
         dct['_obs_stats'] = None
         dct['_transcounts'] = None
         return dct
