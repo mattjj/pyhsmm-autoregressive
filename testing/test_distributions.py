@@ -4,7 +4,7 @@ import abc
 from matplotlib import pyplot as plt
 
 from nose.plugins.attrib import attr
-from pyhsmm.basic.pybasicbayes.testing.mixins import BigDataGibbsTester
+from pybasicbayes.testing.mixins import BigDataGibbsTester
 
 from .. import distributions as d
 from ..util import AR_striding
@@ -13,7 +13,7 @@ from ..util import AR_striding
 # TODO params_close should depend on setting_idx
 
 class ARBigDataGibbsTester(BigDataGibbsTester):
-    def check_big_data(self,setting_idx,hypparam_dict):
+    def check_big_data_Gibbs(self,setting_idx,hypparam_dict):
         d1 = self.distribution_class(**hypparam_dict)
         d2 = self.distribution_class(**hypparam_dict)
 
