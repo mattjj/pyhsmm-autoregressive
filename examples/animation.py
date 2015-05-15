@@ -15,18 +15,18 @@ import autoregressive.distributions as d
 #  generate data  #
 ###################
 
-As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
-        np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2))),
-        np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
+As = [0.95*np.hstack((-np.eye(2),2*np.eye(2))),
+    0.95*np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2))),
+    0.95*np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
 
 truemodel = m.ARHSMM(
         alpha=2.,init_state_distn='uniform',
-        obs_distns=[d.AutoRegression(A=A,sigma=np.eye(2)) for A in As],
+        obs_distns=[d.AutoRegression(A=A,sigma=5*np.eye(2)) for A in As],
         dur_distns=[pyhsmm.basic.distributions.PoissonDuration(alpha_0=1*25,beta_0=1)
             for state in range(len(As))],
         )
 
-data, labels = truemodel.generate(1000)
+data, labels = truemodel.generate(2000)
 data += np.random.normal(size=data.shape) # some extra noise
 
 fig, spa = plt.subplots(2,1)
@@ -42,7 +42,7 @@ plt.gcf().suptitle('truth')
 #  create model  #
 ##################
 
-Nmax = 10
+Nmax = 25
 affine = True
 nlags = 2
 model = m.ARWeakLimitStickyHDPHMM(
@@ -68,13 +68,16 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.editor import VideoClip
 
 fig = model.make_figure()
-model.plot(fig=fig,draw=False,plot_slice=slice(0,200))
+plt.set_cmap('terrain')
+plot_slice = slice(0,500)
+
+model.plot(fig=fig,draw=False,plot_slice=plot_slice)
 
 def make_frame_mpl(t):
     model.resample_model()
-    model.plot(fig=fig,update=True,draw=False,plot_slice=slice(0,200))
+    model.plot(fig=fig,update=True,draw=False,plot_slice=plot_slice)
     return mplfig_to_npimage(fig)
 
-animation = VideoClip(make_frame_mpl, duration=3)
-animation.write_videofile('gibbs.mp4',fps=100)
+animation = VideoClip(make_frame_mpl, duration=10)
+animation.write_videofile('gibbs.mp4',fps=30)
 

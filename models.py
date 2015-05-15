@@ -16,7 +16,7 @@ class _ARMixin(object):
         super(_ARMixin,self).__init__(**kwargs)
         if init_emission_distn is None:
             init_emission_distn = \
-                    Gaussian(nu_0=self.P+10,sigma_0=np.eye(self.P),
+                    Gaussian(nu_0=self.P+1,sigma_0=10*self.P*np.eye(self.P),
                         mu_0=np.zeros(self.P),kappa_0=1.)
         self.init_emission_distn = init_emission_distn
 
@@ -60,7 +60,7 @@ class _ARMixin(object):
 
     def resample_parameters(self):
         super(_ARMixin,self).resample_parameters()
-        # self.resample_init_emission_distn()
+        self.resample_init_emission_distn()
 
     def resample_init_emission_distn(self):
         self.init_emission_distn.resample(
