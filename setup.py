@@ -24,6 +24,7 @@ setup(
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
     url='https://github.com/mattjj/pyhsmm-autoregressive',
+    license='GPL',
     keywords=[
         'bayesian', 'inference', 'mcmc', 'time-series',
         'autoregressive', 'var', 'svar'],
