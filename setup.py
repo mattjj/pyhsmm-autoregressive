@@ -19,7 +19,7 @@ for e in ext_modules:
 
 setup(
     name='autoregressive',
-    version='0.0.1',
+    version='0.0.2',
     description='Extension for switching vector autoregressive models with pyhsmm',
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
