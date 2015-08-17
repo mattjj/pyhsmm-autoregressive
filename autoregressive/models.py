@@ -1,12 +1,12 @@
 from __future__ import division
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import cm
 from matplotlib.collections import LineCollection
 
 import pyhsmm
-from pyhsmm.util.general import rle, cumsum
 from pyhsmm.basic.distributions import Gaussian
+from pyhsmm.util.general import cumsum
+from pybasicbayes.util.general import blockarray
 
 from util import AR_striding, undo_AR_striding
 
@@ -33,7 +33,7 @@ class _ARMixin(object):
                 data[:self.nlags] = self.prefix
             else:
                 data[:self.nlags] = self.init_emission_distn\
-                        .rvs().reshape(data[:self.nlags].shape)
+                    .rvs().reshape(data[:self.nlags].shape)
 
             for idx, state in enumerate(s.stateseq):
                 data[idx+self.nlags] = \
@@ -142,10 +142,10 @@ class _ARMixin(object):
 
         return s._data_lc
 
+
 ###################
 #  model classes  #
 ###################
-
 
 class ARHMM(_ARMixin,pyhsmm.models.HMM):
     pass
@@ -218,7 +218,6 @@ class ARWeakLimitHDPHSMMDelayedIntNegBinSeparateTrans(
 
 
 ### low-level code
-
 
 class _HMMFastResamplingMixin(_ARMixin):
     _obs_stats = None
@@ -363,10 +362,10 @@ class FastARWeakLimitHDPHSMMIntNegBin(
         pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
 
+
 ########################
 #  feature regression  #
 ########################
-
 
 class _FeatureRegressionMixin(object):
     def __init__(self,windowsize=None,featurefn=None,**kwargs):
@@ -499,10 +498,10 @@ class FastFeatureARWeakLimitStickyHDPHMM(
         pyhsmm.models.WeakLimitStickyHDPHMM):
     pass
 
+
 #########################
 #  changepoints models  #
 #########################
-
 
 class _ARChangepointsMixin(object):
     def add_data(self,data,changepoints,strided=False,**kwargs):
@@ -525,4 +524,3 @@ class ARWeakLimitHDPHSMMPossibleChangepointsSeparateTrans(
         _ARMixin,
         pyhsmm.models.WeakLimitHDPHSMMPossibleChangepointsSeparateTrans):
     pass
-
