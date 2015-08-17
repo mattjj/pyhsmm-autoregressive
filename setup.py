@@ -19,12 +19,13 @@ for e in ext_modules:
 
 setup(
     name='autoregressive',
-    version='0.0.2',
+    version='0.0.3',
     description='Extension for switching vector autoregressive models with pyhsmm',
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
     url='https://github.com/mattjj/pyhsmm-autoregressive',
     license='GPL',
+    packages=['autoregressive'],
     keywords=[
         'bayesian', 'inference', 'mcmc', 'time-series',
         'autoregressive', 'var', 'svar'],
