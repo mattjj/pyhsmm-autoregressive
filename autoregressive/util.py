@@ -105,7 +105,7 @@ def is_stable(A):
 ### AR process utilities
 
 def predict_nsteps(nsteps, A, Sigma, mu_0, Sigma_0=None):
-    # TODO use matrix exponentiation here to be faster
+    # TODO could use matrix exponentiation here to be faster for large nsteps
     return predict_sequence([A]*nsteps, [Sigma]*nsteps, mu_0, Sigma_0)
 
 
