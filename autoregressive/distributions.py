@@ -7,7 +7,8 @@ from pyhsmm.basic.distributions import Regression, ARDRegression
 from pyhsmm.util.stats import sample_mniw, sample_invwishart, sample_mn, \
         getdatasize
 
-from util import AR_striding
+from util import AR_striding, score_kstep_predictions
+
 
 class _ARMixin(object):
     @property
@@ -23,15 +24,15 @@ class _ARMixin(object):
 
     def rvs(self,lagged_data):
         return super(_ARMixin,self).rvs(
-                x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
+            x=np.atleast_2d(lagged_data.ravel()),return_xy=False)
 
     def _get_statistics(self,data):
         return super(_ARMixin,self)._get_statistics(
-                data=self._ensure_strided(data))
+            data=self._ensure_strided(data))
 
     def _get_weighted_statistics(self,data,weights):
         return super(_ARMixin,self)._get_weighted_statistics(
-                data=self._ensure_strided(data),weights=weights)
+            data=self._ensure_strided(data),weights=weights)
 
     def log_likelihood(self,xy):
         return super(_ARMixin,self).log_likelihood(self._ensure_strided(xy))
@@ -44,13 +45,18 @@ class _ARMixin(object):
         else:
             return [self._ensure_strided(d) for d in data]
 
+    def predictive_likelihoods(self, data, forecast_horizons, num_procs=None, **kwargs):
+        return [score_kstep_predictions(self.A, self.Sigma, data, k)
+                for k in forecast_horizons]
+
+
 class AutoRegression(_ARMixin,Regression):
     pass
+
 
 class ARDAutoRegression(_ARMixin,ARDRegression):
     def __init__(self,M_0,**kwargs):
         blocksizes = [M_0.shape[0]]*(M_0.shape[1] // M_0.shape[0]) \
-                + ([1] if M_0.shape[1] % M_0.shape[0] and M_0.shape[0] != 1 else [])
+            + ([1] if M_0.shape[1] % M_0.shape[0] and M_0.shape[0] != 1 else [])
         super(ARDAutoRegression,self).__init__(
-                M_0=M_0,blocksizes=blocksizes,**kwargs)
-
+            M_0=M_0,blocksizes=blocksizes,**kwargs)

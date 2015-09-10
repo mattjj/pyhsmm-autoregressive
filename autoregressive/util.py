@@ -2,12 +2,10 @@ from __future__ import division
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
 
+import scipy.stats as stats
+
 
 ### misc
-
-def zero_pad(a, shape):
-    assert a.ndim == len(shape)
-    return np.pad(a, [(0, d1-d2) for d1, d2 in zip(shape,a.shape)], 'constant')
 
 
 ### striding data for efficient AR computations
@@ -62,22 +60,15 @@ def canonical_AR1(A, Sigma=None):
     D, nlags, _ = dimensions(A)
     A, b = unpack_affine(A)
 
-    bigA = zero_pad(A, (D*nlags, D*nlags))
-    bigA[D:,:-D] = np.eye(D*(nlags-1))
+    def zero_pad(a):
+        return np.pad(a, [(D*nlags - d, 0) for d in a.shape], 'constant')
+
+    bigA = zero_pad(A) + np.eye(D*nlags, k=D)
 
     if Sigma is None:
-        return bigA, zero_pad(b, (D*nlags,))
+        return bigA, zero_pad(b)
     else:
-        return bigA, zero_pad(b, (D*nlags,)), zero_pad(Sigma, (D*nlags, D*nlags))
-
-
-def canonical_matrix(A):
-    # NOTE: throws away affine part
-    D, nlags, _ = dimensions(A)
-    mat = np.zeros((D*nlags,D*nlags))
-    mat[:-D,D:] = np.eye(D*(nlags-1))
-    mat[-D:,:] = A[:,:D*nlags]
-    return mat
+        return bigA, zero_pad(b), zero_pad(Sigma)
 
 
 def siso_transfer_function(A,i,j):
@@ -102,27 +93,33 @@ def is_stable(A):
     return np.all(np.abs(np.linalg.eigvals(bigA)) < 1.)
 
 
-### AR process utilities
+### (switching) AR process utilities
 
-def predict_nsteps(nsteps, A, Sigma, mu_0, Sigma_0=None):
-    # NOTE could use matrix exponentiation here to be faster for large nsteps
-    return predict_sequence([A]*nsteps, [Sigma]*nsteps, mu_0, Sigma_0)
+def predict_sequence(As, Sigmas, mu_0, Sigma_0):
+    (nlags, D), T = mu_0.shape, len(As)
+    out_Sigmas = np.cumsum(Sigmas, axis=0)
+    out_mus = np.vstack((mu_0, np.zeros((T, D))))
+
+    strided_mus = AR_striding(out_mus, nlags)
+    for (A, b), xy in zip(map(unpack_affine, As), strided_mus):
+        xy[-D:] = A.dot(xy[:-D]) + b
+
+    return out_mus[nlags:], out_Sigmas
 
 
-def predict_sequence(As, Sigmas, mu_0, Sigma_0=None):
-    assert len(set(A.shape for A in As)) == 1, 'must all have same lags'
-    Sigma_0 = Sigma_0 if Sigma_0 is not None else np.zeros(2*(mu_0.shape[0],))
+def score_kstep_predictions(A, Sigma, data, k):
+    D, nlags, _ = dimensions(A)
+    strided_data = AR_striding(data, nlags-1)
 
-    if len(As) == 0:
-        return mu_0, Sigma_0
-    D, nlags, _ = dimensions(As[0])
+    def propagator(k):
+        bigA, bigb = canonical_AR1(A)
+        A_k, b_k = np.linalg.matrix_power(bigA, k)[-D:], k*bigb[-D:]
 
-    def predict_onestep(A, Sigma, mu_0, Sigma_0):
-        A, b, Sigma = canonical_AR1(A, Sigma)
-        return A.dot(mu_0) + b, Sigma_0 + Sigma
+        def propagate(strided_data):
+            return A_k.dot(strided_data.T).T + b_k
 
-    predictions = [(mu_0, Sigma_0)]
-    for A, Sigma in zip(As, Sigmas):
-        predictions.append(predict_onestep(A, Sigma, *predictions[-1]))
+        return propagate
 
-    return [(mu[:D], Sigma[:D,:D]) for mu, Sigma in predictions]
+    propagate = propagator(k)
+    return stats.multivariate_normal(np.zeros(D), Sigma*k)\
+        .logpdf(data[nlags-1+k:] - propagate(strided_data[:-k]))

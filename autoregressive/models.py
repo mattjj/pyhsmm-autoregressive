@@ -56,21 +56,21 @@ class _ARMixin(object):
 
         return data
 
-    def predictive_likelihoods(
-            self, test_data, forecast_horizons, num_procs=None,
-            num_samples=100, **kwargs):
+#     def predictive_likelihoods(
+#             self, test_data, forecast_horizons, num_procs=None,
+#             num_samples=100, **kwargs):
 
-        if not num_procs:
-            self.add_data(data=test_data, **kwargs)
-            s = self.states_list.pop()
-            alphal = s.messages_fowrards_log()
+#         if not num_procs:
+#             self.add_data(data=test_data, **kwargs)
+#             s = self.states_list.pop()
+#             alphal = s.messages_fowrards_log()
 
-            for t in range(T):
-                stateseq = simulate_forwards(alphal[t])  # TODO implement this
-                for k in forecast_horizons:
-                    pass  # TODO
-        else:
-            raise NotImplementedError, 'no parallel implementation yet'
+#             for t in range(T):
+#                 stateseq = simulate_forwards(alphal[t])  # TODO implement this
+#                 for k in forecast_horizons:
+#                     pass  # TODO
+#         else:
+#             raise NotImplementedError, 'no parallel implementation yet'
 
     ### Gibbs
 
