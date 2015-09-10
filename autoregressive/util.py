@@ -115,7 +115,7 @@ def score_kstep_predictions(A, Sigma, data, k):
 
 ### switching AR process utilities
 
-def predict_sequence(As, Sigmas, mu_0, Sigma_0):
+def predict_switching(As, Sigmas, mu_0, Sigma_0):
     (nlags, D), T = mu_0.shape, len(As)
     out_Sigmas = np.cumsum(Sigmas, axis=0)
     out_mus = np.vstack((mu_0, np.zeros((T, D))))
@@ -132,6 +132,6 @@ def score_switching_predictions(As, Sigmas, data):
         return np.array([], dtype=np.float64)
     nlags, D = dimensions(As[0])
     t = data.shape[0] - len(As)
-    mus, sigmas = predict_sequence(As, Sigmas, data[t-nlags:t], np.zeros((D,D)))
+    mus, sigmas = predict_switching(As, Sigmas, data[t-nlags:t], np.zeros((D,D)))
     return [stats.multivariate_normal(mu, sigma).logpdf(d)
             for mu, sigma, d in zip(mus, sigmas, data[t:])]
