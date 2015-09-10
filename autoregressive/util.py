@@ -50,14 +50,14 @@ def dimensions(A):
     if is_affine(A):
         A = A[:,:-1]
     D, nlags = A.shape[0], A.shape[1] // A.shape[0]
-    return D, nlags, is_affine(A)
+    return D, nlags
 
 
 ### analyzing AR coefficient matrices
 
 def canonical_AR1(A, Sigma=None):
     A = np.atleast_2d(A)
-    D, nlags, _ = dimensions(A)
+    D, nlags = dimensions(A)
     A, b = unpack_affine(A)
 
     def zero_pad(a):
@@ -72,7 +72,7 @@ def canonical_AR1(A, Sigma=None):
 
 
 def siso_transfer_function(A,i,j):
-    D, nlags, _ = dimensions(A)
+    D, nlags = dimensions(A)
 
     assert 0 <= i < nlags*D and 0 <= j < D
     assert not is_affine(A), 'this function ignores the affine part'
@@ -93,22 +93,10 @@ def is_stable(A):
     return np.all(np.abs(np.linalg.eigvals(bigA)) < 1.)
 
 
-### (switching) AR process utilities
-
-def predict_sequence(As, Sigmas, mu_0, Sigma_0):
-    (nlags, D), T = mu_0.shape, len(As)
-    out_Sigmas = np.cumsum(Sigmas, axis=0)
-    out_mus = np.vstack((mu_0, np.zeros((T, D))))
-
-    strided_mus = AR_striding(out_mus, nlags)
-    for (A, b), xy in zip(map(unpack_affine, As), strided_mus):
-        xy[-D:] = A.dot(xy[:-D]) + b
-
-    return out_mus[nlags:], out_Sigmas
-
+### AR process utilities
 
 def score_kstep_predictions(A, Sigma, data, k):
-    D, nlags, _ = dimensions(A)
+    D, nlags = dimensions(A)
     strided_data = AR_striding(data, nlags-1)
 
     def propagator(k):
@@ -123,3 +111,27 @@ def score_kstep_predictions(A, Sigma, data, k):
     propagate = propagator(k)
     return stats.multivariate_normal(np.zeros(D), Sigma*k)\
         .logpdf(data[nlags-1+k:] - propagate(strided_data[:-k]))
+
+
+### switching AR process utilities
+
+def predict_sequence(As, Sigmas, mu_0, Sigma_0):
+    (nlags, D), T = mu_0.shape, len(As)
+    out_Sigmas = np.cumsum(Sigmas, axis=0)
+    out_mus = np.vstack((mu_0, np.zeros((T, D))))
+
+    strided_mus = AR_striding(out_mus, nlags)
+    for (A, b), xy in zip(map(unpack_affine, As), strided_mus):
+        xy[-D:] = A.dot(xy[:-D]) + b
+
+    return out_mus[nlags:], out_Sigmas
+
+
+def score_switching_predictions(As, Sigmas, data):
+    if len(As) == 0:
+        return np.array([], dtype=np.float64)
+    nlags, D = dimensions(As[0])
+    t = data.shape[0] - len(As)
+    mus, sigmas = predict_sequence(As, Sigmas, data[t-nlags:t], np.zeros((D,D)))
+    return [stats.multivariate_normal(mu, sigma).logpdf(d)
+            for mu, sigma, d in zip(mus, sigmas, data[t:])]
