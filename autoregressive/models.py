@@ -8,7 +8,7 @@ from pyhsmm.basic.distributions import Gaussian
 from pyhsmm.util.general import cumsum
 from pybasicbayes.util.general import blockarray
 
-from util import AR_striding, undo_AR_striding
+from util import AR_striding, undo_AR_striding, predict_sequence
 
 
 class _ARMixin(object):
@@ -55,6 +55,22 @@ class _ARMixin(object):
                     self.obs_distns[state].rvs(lagged_data=data[idx:idx+self.nlags])
 
         return data
+
+    def predictive_likelihoods(
+            self, test_data, forecast_horizons, num_procs=None,
+            num_samples=100, **kwargs):
+
+        if not num_procs:
+            self.add_data(data=test_data, **kwargs)
+            s = self.states_list.pop()
+            alphal = s.messages_fowrards_log()
+
+            for t in range(T):
+                stateseq = simulate_forwards(alphal[t])  # TODO implement this
+                for k in forecast_horizons:
+                    pass  # TODO
+        else:
+            raise NotImplementedError, 'no parallel implementation yet'
 
     ### Gibbs
 

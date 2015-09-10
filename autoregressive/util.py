@@ -105,12 +105,13 @@ def is_stable(A):
 ### AR process utilities
 
 def predict_nsteps(nsteps, A, Sigma, mu_0, Sigma_0=None):
-    # TODO could use matrix exponentiation here to be faster for large nsteps
+    # NOTE could use matrix exponentiation here to be faster for large nsteps
     return predict_sequence([A]*nsteps, [Sigma]*nsteps, mu_0, Sigma_0)
 
 
 def predict_sequence(As, Sigmas, mu_0, Sigma_0=None):
     assert len(set(A.shape for A in As)) == 1, 'must all have same lags'
+    Sigma_0 = Sigma_0 if Sigma_0 is not None else np.zeros(2*(mu_0.shape[0],))
 
     if len(As) == 0:
         return mu_0, Sigma_0
@@ -120,8 +121,8 @@ def predict_sequence(As, Sigmas, mu_0, Sigma_0=None):
         A, b, Sigma = canonical_AR1(A, Sigma)
         return A.dot(mu_0) + b, Sigma_0 + Sigma
 
-    Sigma_0 = Sigma_0 if Sigma_0 is not None else np.zeros(2*(mu_0.shape[0],))
+    predictions = [(mu_0, Sigma_0)]
     for A, Sigma in zip(As, Sigmas):
-        mu_0, Sigma_0 = predict_onestep(A, Sigma, mu_0, Sigma_0)
+        predictions.append(predict_onestep(A, Sigma, *predictions[-1]))
 
-    return mu_0[:D], Sigma_0[:D,:D]
+    return [(mu[:D], Sigma[:D,:D]) for mu, Sigma in predictions]
