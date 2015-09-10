@@ -70,6 +70,7 @@ def canonical_AR1(A, Sigma=None):
     else:
         return bigA, zero_pad(b, (D*nlags,)), zero_pad(Sigma, (D*nlags, D*nlags))
 
+
 def canonical_matrix(A):
     # NOTE: throws away affine part
     D, nlags, _ = dimensions(A)
