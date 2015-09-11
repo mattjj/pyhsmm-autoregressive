@@ -130,8 +130,10 @@ def predict_switching(As, Sigmas, mu_0, Sigma_0):
 def score_switching_predictions(As, Sigmas, data):
     if len(As) == 0:
         return np.array([], dtype=np.float64)
-    nlags, D = dimensions(As[0])
-    t = data.shape[0] - len(As)
-    mus, sigmas = predict_switching(As, Sigmas, data[t-nlags:t], np.zeros((D,D)))
-    return [stats.multivariate_normal(mu, sigma).logpdf(d)
-            for mu, sigma, d in zip(mus, sigmas, data[t:])]
+    D, nlags = dimensions(As[0])
+    assert len(As) == data.shape[0] - nlags
+
+    mus, sigmas = predict_switching(As, Sigmas, data[:nlags], np.zeros((D,D)))
+    return np.asarray(
+        [stats.multivariate_normal(mu, sigma).logpdf(d)
+         for mu, sigma, d in zip(mus, sigmas, data[nlags:])])

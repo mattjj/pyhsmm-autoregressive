@@ -1,15 +1,14 @@
 from __future__ import division
 import numpy as np
 from matplotlib import pyplot as plt
-plt.ion()
 np.random.seed(0)
 
 import pyhsmm
 from pyhsmm.util.text import progprint_xrange
-from pyhsmm.util.stats import whiten, cov
 
 import autoregressive.models as m
 import autoregressive.distributions as d
+
 
 ###################
 #  generate data  #
@@ -57,6 +56,7 @@ model = m.ARHMM(
 
 model.add_data(data)
 
+
 ###############
 #  inference  #
 ###############
@@ -67,3 +67,14 @@ for itr in progprint_xrange(100):
 model.plot()
 plt.gcf().suptitle('sampled')
 
+
+###############
+#  forecasts  #
+###############
+
+foo = model.predictive_likelihoods(data, range(1, 21))
+plt.figure()
+plt.plot(foo)
+
+
+plt.show()

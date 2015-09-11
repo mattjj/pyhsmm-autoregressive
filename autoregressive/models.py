@@ -2,13 +2,15 @@ from __future__ import division
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
+from scipy.misc import logsumexp
 
 import pyhsmm
 from pyhsmm.basic.distributions import Gaussian
 from pyhsmm.util.general import cumsum
+from pyhsmm.internals.hmm_states import sample_markov
 from pybasicbayes.util.general import blockarray
 
-from util import AR_striding, undo_AR_striding, predict_sequence
+from util import AR_striding, undo_AR_striding, score_switching_predictions
 
 
 class _ARMixin(object):
@@ -47,7 +49,8 @@ class _ARMixin(object):
 
             # TODO should sample from init_emission_distn if there are nans in
             # data[:self.nlags]
-            assert not np.isnan(data[:self.nlags]).any(), "can't have missing data (nans) in prefix"
+            assert not np.isnan(data[:self.nlags]).any()(
+                "can't have missing data (nans) in prefix")
 
             nan_idx, = np.where(np.isnan(data[self.nlags:]).any(1))
             for idx, state in zip(nan_idx,s.stateseq[nan_idx]):
@@ -56,21 +59,36 @@ class _ARMixin(object):
 
         return data
 
-#     def predictive_likelihoods(
-#             self, test_data, forecast_horizons, num_procs=None,
-#             num_samples=100, **kwargs):
+    def predictive_likelihoods(
+            self, test_data, forecast_horizons, num_timepoints, num_samples,
+            num_procs=None, **kwargs):
+        assert min(forecast_horizons) > 0
+        fh = np.asarray(forecast_horizons)
+        K = fh.max()
+        transmat = self.trans_distn.trans_matrix
 
-#         if not num_procs:
-#             self.add_data(data=test_data, **kwargs)
-#             s = self.states_list.pop()
-#             alphal = s.messages_fowrards_log()
+        def expnorm(a, axis):
+            return np.exp(a - logsumexp(a, axis=axis, keepdims=True))
 
-#             for t in range(T):
-#                 stateseq = simulate_forwards(alphal[t])  # TODO implement this
-#                 for k in forecast_horizons:
-#                     pass  # TODO
-#         else:
-#             raise NotImplementedError, 'no parallel implementation yet'
+        self.add_data(data=test_data, **kwargs)
+        s = self.states_list.pop()
+        statepredictions = expnorm(s.messages_forwards_log() - s.aBl, axis=1)
+
+        def params(o):
+            return o.A, o.sigma
+
+        def sample_and_score(t):
+            stateseq = sample_markov(K, transmat, statepredictions[t])
+            As, Sigmas = zip(*[params(self.obs_distns[i]) for i in stateseq])
+            scores = score_switching_predictions(As, Sigmas, test_data[t-self.nlags:t+K])
+            return scores[fh-1]
+
+        Ts = np.random.choice(s.T-K, num_timepoints)
+        if not num_procs:
+            scores = [sample_and_score(t) for i in range(num_samples) for t in Ts]
+            return logsumexp(scores, axis=0) - np.log((s.T - K) * num_samples)
+        else:
+            raise NotImplementedError('no parallel implementation yet')
 
     ### Gibbs
 
