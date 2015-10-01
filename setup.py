@@ -1,6 +1,7 @@
 from distutils.core import setup
 import numpy as np
 import os
+import sys
 from Cython.Build import cythonize
 
 import pyhsmm
@@ -9,13 +10,16 @@ eigen_include_path = os.path.join(
 pyhsmm_include_path = os.path.join(
     os.path.dirname(pyhsmm.__file__),'internals')
 
-extra_compile_args = ['-w','-DNDEBUG']
-extra_link_args =[]
+if '--compile-stuff' in sys.argv:
+    extra_compile_args = ['-w','-DNDEBUG']
+    extra_link_args =[]
 
-ext_modules = cythonize('**/*.pyx')
-for e in ext_modules:
-    e.extra_compile_args.extend(extra_compile_args)
-    e.extra_link_args.extend(extra_link_args)
+    ext_modules = cythonize('**/*.pyx')
+    for e in ext_modules:
+        e.extra_compile_args.extend(extra_compile_args)
+        e.extra_link_args.extend(extra_link_args)
+else:
+    ext_modules = []
 
 setup(
     name='autoregressive',
