@@ -11,6 +11,7 @@ pyhsmm_include_path = os.path.join(
     os.path.dirname(pyhsmm.__file__),'internals')
 
 if '--compile-stuff' in sys.argv:
+    sys.argv.remove('--compile-stuff')
     extra_compile_args = ['-w','-DNDEBUG']
     extra_link_args =[]
 
