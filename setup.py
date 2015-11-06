@@ -1,25 +1,29 @@
 from distutils.core import setup
+from setuptools.command.build_ext import build_ext as _build_ext
+from Cython.Build import cythonize
 import numpy as np
 import os
-import sys
-from Cython.Build import cythonize
+from warnings import warn
 
 import pyhsmm
 eigen_include_path = os.path.join(
-    os.path.dirname(pyhsmm.__file__),'deps','Eigen3')
+    os.path.dirname(os.path.dirname(pyhsmm.__file__)),'deps')
 pyhsmm_include_path = os.path.join(
     os.path.dirname(pyhsmm.__file__),'internals')
 
-if '--compile-stuff' in sys.argv:
-    sys.argv.remove('--compile-stuff')
-    extra_compile_args = ['-w','-DNDEBUG']
-    extra_link_args =[]
+# wrap the build_ext command to handle and compilation errors
+class build_ext(_build_ext):
+    # if extension modules fail to build, keep going anyway
+    def run(self):
+        try:
+            _build_ext.run(self)
+        except CompileError:
+            warn('Failed to build optional extension modules')
 
+try:
     ext_modules = cythonize('**/*.pyx')
-    for e in ext_modules:
-        e.extra_compile_args.extend(extra_compile_args)
-        e.extra_link_args.extend(extra_link_args)
-else:
+except:
+    warn('Failed to generate optional extension module code from Cython files')
     ext_modules = []
 
 setup(
@@ -47,4 +51,9 @@ setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
         'Programming Language :: C++'],
+    classifiers=
+        ['Intended Audience :: Science/Research',
+         'Programming Language :: Python',
+         'Programming Language :: C++'],
+    cmdclass={'build_ext': build_ext},
 )
