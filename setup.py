@@ -51,9 +51,5 @@ setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
         'Programming Language :: C++'],
-    classifiers=
-        ['Intended Audience :: Science/Research',
-         'Programming Language :: Python',
-         'Programming Language :: C++'],
     cmdclass={'build_ext': build_ext},
 )
