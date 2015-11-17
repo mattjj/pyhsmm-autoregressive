@@ -17,7 +17,7 @@ class build_ext(_build_ext):
     def run(self):
         try:
             _build_ext.run(self)
-        except CompileError:
+        except:
             warn('Failed to build optional extension modules')
 
 try:
