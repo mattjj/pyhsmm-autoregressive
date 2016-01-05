@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 
 import pyhsmm
+from pyhsmm.models import _SeparateTransMixin
 from pyhsmm.basic.distributions import Gaussian
 from pyhsmm.util.general import cumsum
 from pybasicbayes.util.general import blockarray
@@ -286,6 +287,15 @@ class _HMMFastResamplingMixin(_ARMixin):
         normalizer = D/2*np.log(2*np.pi) + np.log(np.diag(np.linalg.cholesky(sigma))).sum()
         return parammat, normalizer
 
+
+class FastARHMM(_HMMFastResamplingMixin,pyhsmm.models.HMM):
+    pass
+
+class FastARWeakLimitHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitHDPHMM):
+    pass
+
+class FastARWeakLimitStickyHDPHMM(_HMMFastResamplingMixin,pyhsmm.models.WeakLimitStickyHDPHMM):
+    pass
 
 class FastARWeakLimitStickyHDPHMMSeparateTrans(_SeparateTransMixin,FastARWeakLimitStickyHDPHMM):
         _states_class = pyhsmm.internals.hmm_states.HMMStatesEigenSeparateTrans
