@@ -61,7 +61,7 @@ class _ARMixin(object):
 
     def resample_parameters(self):
         super(_ARMixin,self).resample_parameters()
-        self.resample_init_emission_distn()
+        # self.resample_init_emission_distn()
 
     def resample_init_emission_distn(self):
         self.init_emission_distn.resample(
