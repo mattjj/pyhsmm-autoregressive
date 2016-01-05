@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='autoregressive',
-    version='0.0.4',
+    version='0.0.5',
     description='Extension for switching vector autoregressive models with pyhsmm',
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
