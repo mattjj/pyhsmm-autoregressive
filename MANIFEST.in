@@ -1,1 +1,1 @@
-recursive-include pyhsmm *.pyx *.c *.h *.cpp
+recursive-include autoregressive *.pyx *.c *.h *.cpp
