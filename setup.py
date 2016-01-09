@@ -26,11 +26,7 @@ setup(
         'autoregressive', 'var', 'svar'],
     install_requires=[
         'Cython >= 0.20.1',
-        'numpy',
-        'scipy',
-        'matplotlib',
-        'pybasicbayes >= 0.1.3',
-        'pyhsmm >= 0.1.4'],
+        'numpy', 'scipy', 'matplotlib', 'pybasicbayes' 'pyhsmm']
     classifiers=[
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',

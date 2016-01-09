@@ -1,1 +1,1 @@
-include LICENSE-GPL
+recursive-include pyhsmm *.pyx *.c *.h *.cpp
