@@ -14,7 +14,7 @@ print eigen_include
 
 setup(
     name='autoregressive',
-    version='0.0.7',
+    version='0.0.8',
     description='Extension for switching vector autoregressive models with pyhsmm',
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
@@ -26,7 +26,7 @@ setup(
         'autoregressive', 'var', 'svar'],
     install_requires=[
         'Cython >= 0.20.1',
-        'numpy', 'scipy', 'matplotlib', 'pybasicbayes' 'pyhsmm'],
+        'numpy', 'scipy', 'matplotlib', 'pybasicbayes', 'pyhsmm'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
