@@ -8,6 +8,7 @@ from shutil import move
 import tarfile
 from urllib import urlretrieve
 from glob import glob
+import sys
 
 # make dependency directory
 if not exists('deps'):
@@ -25,6 +26,12 @@ if not exists(eigenpath):
     thedir = glob(join('deps', 'eigen-eigen-*'))[0]
     move(join(thedir, 'Eigen'), eigenpath)
     print('...done!')
+
+if '--no-compile' in sys.argv:
+    ext_modules = []
+    sys.argv.remove('--no-compile')
+else:
+    ext_modules = cythonize('**/*.pyx')
 
 setup(
     name='autoregressive',
@@ -45,6 +52,6 @@ setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
         'Programming Language :: C++'],
-    ext_modules=cythonize('**/*.pyx'),
+    ext_modules=ext_modules,
     include_dirs=[np.get_include(), 'deps']
 )
