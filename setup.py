@@ -28,7 +28,7 @@ if not exists(eigenpath):
 
 setup(
     name='autoregressive',
-    version='0.1.0',
+    version='0.1.1',
     description='Extension for switching vector autoregressive models with pyhsmm',
     author='Matthew James Johnson',
     author_email='mattjj@csail.mit.edu',
@@ -40,7 +40,7 @@ setup(
         'autoregressive', 'var', 'svar'],
     install_requires=[
         'Cython >= 0.20.1',
-        'numpy', 'scipy', 'matplotlib', 'pybasicbayes', 'pyhsmm'],
+        'numpy', 'scipy', 'matplotlib', 'pybasicbayes >= 0.2.1', 'pyhsmm'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
