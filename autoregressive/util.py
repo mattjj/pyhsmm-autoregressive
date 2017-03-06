@@ -21,8 +21,8 @@ def undo_AR_striding(strided_data,nlags):
     sz = strided_data.dtype.itemsize
     return ast(
             strided_data,
-            shape=(strided_data.shape[0]+nlags,strided_data.shape[1]/(nlags+1)),
-            strides=(strided_data.shape[1]/(nlags+1)*sz,sz))
+            shape=(strided_data.shape[0]+nlags,strided_data.shape[1]//(nlags+1)),
+            strides=(strided_data.shape[1]//(nlags+1)*sz,sz))
 
 ### analyzing AR coefficient matrices
 
