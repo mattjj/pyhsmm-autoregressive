@@ -9,7 +9,7 @@ from pyhsmm.basic.distributions import Gaussian
 from pyhsmm.util.general import cumsum
 from pybasicbayes.util.general import blockarray
 
-from util import AR_striding, undo_AR_striding
+from autoregressive.util import AR_striding, undo_AR_striding
 
 
 class _ARMixin(object):

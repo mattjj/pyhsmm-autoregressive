@@ -14,7 +14,7 @@ import autoregressive.distributions as d
 ###################
 #  generate data  #
 ###################
-
+D_obs = 2
 As = [0.99*np.hstack((-np.eye(2),2*np.eye(2))),
         np.array([[np.cos(np.pi/6),-np.sin(np.pi/6)],[np.sin(np.pi/6),np.cos(np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2))),
         np.array([[np.cos(-np.pi/6),-np.sin(-np.pi/6)],[np.sin(-np.pi/6),np.cos(-np.pi/6)]]).dot(np.hstack((-np.eye(2),np.eye(2)))) + np.hstack((np.zeros((2,2)),np.eye(2)))]
@@ -40,7 +40,7 @@ plt.gcf().suptitle('truth')
 ##################
 
 Nmax = 10
-affine = True
+affine = False
 nlags = 3
 model = m.ARHMM(
         alpha=4.,
@@ -48,9 +48,9 @@ model = m.ARHMM(
         obs_distns=[
             d.AutoRegression(
                 nu_0=3,
-                S_0=np.eye(2),
-                M_0=np.zeros((2,2*nlags+affine)),
-                K_0=np.eye(2*nlags+affine),
+                S_0=np.eye(D_obs),
+                M_0=np.hstack((np.eye(D_obs), np.zeros((D_obs, D_obs*(nlags-1)+affine)))),
+                K_0=np.eye(D_obs*nlags+affine),
                 affine=affine)
             for state in range(Nmax)],
         )
