@@ -6,7 +6,7 @@ from os.path import dirname, join, exists
 from os import mkdir
 from shutil import move
 import tarfile
-from urllib import urlretrieve
+from six.moves.urllib.request import urlretrieve
 from glob import glob
 
 # make dependency directory
