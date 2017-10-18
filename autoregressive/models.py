@@ -183,6 +183,8 @@ class ARHMMSeparateTrans(_ARMixin,pyhsmm.models.HMMSeparateTrans):
 class ARWeakLimitHDPHMMSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHMMSeparateTrans):
     pass
 
+class ARWeakLimitStickyHDPHMMSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitStickyHDPHMMSeparateTrans):
+    pass
 
 class ARWeakLimitHDPHSMMIntNegBinSeparateTrans(_ARMixin,pyhsmm.models.WeakLimitHDPHSMMIntNegBin):
     pass
