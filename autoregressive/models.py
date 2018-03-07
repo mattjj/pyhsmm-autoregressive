@@ -237,7 +237,7 @@ class _HMMFastResamplingMixin(_ARMixin):
         super(_HMMFastResamplingMixin,self).resample_states(**kwargs)
 
     def resample_states(self,**kwargs):
-        from messages import resample_arhmm
+        from autoregressive.messages import resample_arhmm
         if len(self.states_list) > 0:
             stateseqs = [np.empty(s.T,dtype='int32') for s in self.states_list]
             params, normalizers = map(np.array,zip(*[self._param_matrix(o) for o in self.obs_distns]))
