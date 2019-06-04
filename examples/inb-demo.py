@@ -43,7 +43,7 @@ obs_distns=[d.AutoRegression(
     K_0=np.eye(4+affine), affine=affine) for state in range(Nmax)]
 
 dur_distns=[NegativeBinomialIntegerR2Duration(
-    r_discrete_distn=np.ones(10.),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
+    r_discrete_distn=np.ones(10),alpha_0=1.,beta_0=1.) for state in range(Nmax)]
 
 model = m.ARWeakLimitHDPHSMMIntNegBin(
         alpha=4.,gamma=4.,init_state_concentration=10.,
